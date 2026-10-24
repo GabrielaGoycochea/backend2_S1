@@ -25,6 +25,7 @@ public class MascotaServiceImpl implements MascotaService {
         Usuario propietario = usuarioRepository.findById(propietarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Propietario no encontrado"));
 
+        mascota.setId(null); // evita sobrescribir otra mascota enviando un id en el JSON
         mascota.setPropietario(propietario);
         return mascotaRepository.save(mascota);
     }

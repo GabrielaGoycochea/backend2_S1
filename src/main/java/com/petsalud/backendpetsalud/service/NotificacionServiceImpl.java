@@ -26,6 +26,7 @@ public class NotificacionServiceImpl implements NotificacionService {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
+        notificacion.setId(null);
         notificacion.setUsuario(usuario);
         notificacion.setFecha(LocalDateTime.now());
         notificacion.setLeida(false);

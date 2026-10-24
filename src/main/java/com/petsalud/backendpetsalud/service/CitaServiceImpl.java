@@ -2,6 +2,7 @@ package com.petsalud.backendpetsalud.service;
 
 import com.petsalud.backendpetsalud.entity.Cita;
 import com.petsalud.backendpetsalud.entity.Mascota;
+import com.petsalud.backendpetsalud.entity.Rol;
 import com.petsalud.backendpetsalud.entity.Usuario;
 import com.petsalud.backendpetsalud.repository.CitaRepository;
 import com.petsalud.backendpetsalud.repository.MascotaRepository;
@@ -13,9 +14,13 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class CitaServiceImpl implements CitaService {
+
+    /** Lista blanca de estados válidos (no se acepta texto libre del cliente). */
+    private static final Set<String> ESTADOS_VALIDOS = Set.of("Agendada", "Confirmada", "Completada", "Cancelada");
 
     @Autowired
     private CitaRepository citaRepository;
@@ -31,8 +36,14 @@ public class CitaServiceImpl implements CitaService {
         Mascota mascota = mascotaRepository.findById(mascotaId)
                 .orElseThrow(() -> new IllegalArgumentException("Mascota no encontrada"));
 
+        // Solo se puede asignar a un usuario que realmente sea veterinario
         Usuario veterinario = usuarioRepository.findById(veterinarioId)
+                .filter(u -> u.getRol() == Rol.VETERINARIO)
                 .orElseThrow(() -> new IllegalArgumentException("Veterinario no encontrado"));
+
+        if (motivo == null || motivo.isBlank() || motivo.length() > 255) {
+            throw new IllegalArgumentException("El motivo es obligatorio (máximo 255 caracteres)");
+        }
 
         // Opcional: Verificar disponibilidad del veterinario en ese horario
 
@@ -54,6 +65,9 @@ public class CitaServiceImpl implements CitaService {
 
     @Override
     public Cita actualizarEstadoCita(Long id, String nuevoEstado) {
+        if (!ESTADOS_VALIDOS.contains(nuevoEstado)) {
+            throw new IllegalArgumentException("Estado inválido. Valores permitidos: " + ESTADOS_VALIDOS);
+        }
         return citaRepository.findById(id).map(cita -> {
             cita.setEstado(nuevoEstado);
             return citaRepository.save(cita);

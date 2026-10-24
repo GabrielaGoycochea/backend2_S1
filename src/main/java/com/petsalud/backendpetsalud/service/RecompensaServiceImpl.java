@@ -26,6 +26,7 @@ public class RecompensaServiceImpl implements RecompensaService {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
+        recompensa.setId(null);
         recompensa.setUsuario(usuario);
         recompensa.setFecha(LocalDateTime.now());
 

@@ -2,6 +2,7 @@ package com.petsalud.backendpetsalud.service;
 
 import com.petsalud.backendpetsalud.entity.ExpedienteMedico;
 import com.petsalud.backendpetsalud.entity.Mascota;
+import com.petsalud.backendpetsalud.entity.Rol;
 import com.petsalud.backendpetsalud.entity.Usuario;
 import com.petsalud.backendpetsalud.repository.ExpedienteMedicoRepository;
 import com.petsalud.backendpetsalud.repository.MascotaRepository;
@@ -32,8 +33,10 @@ public class ExpedienteMedicoServiceImpl implements ExpedienteMedicoService {
                 .orElseThrow(() -> new IllegalArgumentException("Mascota no encontrada"));
 
         Usuario veterinario = usuarioRepository.findById(veterinarioId)
+                .filter(u -> u.getRol() == Rol.VETERINARIO)
                 .orElseThrow(() -> new IllegalArgumentException("Veterinario no encontrado"));
 
+        registro.setId(null); // evita sobrescribir un expediente existente enviando un id
         registro.setMascota(mascota);
         registro.setVeterinario(veterinario);
         registro.setFecha(LocalDateTime.now());

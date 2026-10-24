@@ -4,6 +4,7 @@ import com.petsalud.backendpetsalud.entity.Cita;
 import com.petsalud.backendpetsalud.service.CitaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,6 +16,7 @@ public class CitaController {
     @Autowired
     private CitaService citaService;
 
+    @PreAuthorize("hasAnyAuthority('VETERINARIO','ADMIN') or @seg.esDuenoMascota(#mascotaId)")
     @PostMapping
     public ResponseEntity<Cita> agendarCita(
             @RequestParam Long mascotaId,
@@ -26,6 +28,7 @@ public class CitaController {
         return ResponseEntity.ok(nuevaCita);
     }
 
+    @PreAuthorize("hasAnyAuthority('VETERINARIO','ADMIN') or @seg.esDuenoCita(#id)")
     @GetMapping("/{id}")
     public ResponseEntity<Cita> obtenerCitaPorId(@PathVariable Long id) {
         return citaService.obtenerCitaPorId(id)
@@ -33,30 +36,35 @@ public class CitaController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PreAuthorize("hasAuthority('ADMIN') or (hasAuthority('VETERINARIO') and @seg.esVeterinarioDeCita(#id))")
     @PutMapping("/{id}/estado")
     public ResponseEntity<Cita> actualizarEstadoCita(@PathVariable Long id, @RequestParam String estado) {
         Cita citaActualizada = citaService.actualizarEstadoCita(id, estado);
         return ResponseEntity.ok(citaActualizada);
     }
 
+    @PreAuthorize("hasAnyAuthority('VETERINARIO','ADMIN') or @seg.esDuenoCita(#id)")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelarCita(@PathVariable Long id) {
         citaService.cancelarCita(id);
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasAnyAuthority('VETERINARIO','ADMIN') or @seg.esDuenoMascota(#mascotaId)")
     @GetMapping("/mascota/{mascotaId}")
     public ResponseEntity<List<Cita>> listarCitasPorMascota(@PathVariable Long mascotaId) {
         List<Cita> citas = citaService.listarCitasPorMascota(mascotaId);
         return ResponseEntity.ok(citas);
     }
 
+    @PreAuthorize("hasAnyAuthority('VETERINARIO','ADMIN')")
     @GetMapping("/veterinario/{veterinarioId}")
     public ResponseEntity<List<Cita>> listarCitasPorVeterinario(@PathVariable Long veterinarioId) {
         List<Cita> citas = citaService.listarCitasPorVeterinario(veterinarioId);
         return ResponseEntity.ok(citas);
     }
 
+    @PreAuthorize("hasAnyAuthority('VETERINARIO','ADMIN')")
     @GetMapping("/entre-fechas")
     public ResponseEntity<List<Cita>> listarCitasEntreFechas(
             @RequestParam String inicio,

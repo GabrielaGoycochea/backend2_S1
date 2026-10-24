@@ -79,8 +79,15 @@ PENDIENTE crear una **Collection** llamada "PetSalud" y guardar ahí las pruebas
 | 5 | `GET http://localhost:8080/api/productos` | Ninguna | **200 OK** (el catálogo es público) |
 | 6 | `POST http://localhost:8080/api/productos` | `cliente@petsalud.cl` | **403 Forbidden** |
 | 7 | `POST http://localhost:8080/api/productos` | `admin@petsalud.cl` | **200 OK**, producto creado |
-| 8 | `GET http://localhost:8080/api/expedientes/mascota/1` | `cliente@petsalud.cl` | **403 Forbidden** (solo personal) |
+| 8 | `GET http://localhost:8080/api/expedientes/mascota/1` | `cliente@petsalud.cl` | **403 Forbidden** (la mascota 1 no es suya: solo personal o el dueño) |
 | 9 | `GET http://localhost:8080/api/expedientes/mascota/1` | `vet@petsalud.cl` | Autorizado: **200 OK** (lista vacía si no hay datos) |
+| 10 | `GET http://localhost:8080/api/auth/me` | cualquier usuario | **200 OK**, muestra email y rol con que quedó autenticada la petición |
+| 11 | `GET http://localhost:8080/api/mascotas/{id}` de una mascota de **otro** cliente | `cliente@petsalud.cl` | **403 Forbidden** (no puede ver datos ajenos) |
+| 12 | `GET http://localhost:8080/api/usuarios/{id}` con su **propio** id | `cliente@petsalud.cl` | **200 OK**; con el id de otro usuario: **403** |
+| 13 | 5 veces `GET /api/auth/me` con contraseña incorrecta y luego la correcta | `cliente@petsalud.cl` | **401** también con la correcta: cuenta bloqueada 15 minutos (consola: `CUENTA BLOQUEADA`) |
+| 14 | `GET http://localhost:8080/api/cualquier-cosa` | `admin@petsalud.cl` | **403**: toda ruta no declarada se bloquea (`denyAll`) |
+
+> Para la prueba 11: registra una mascota con un cliente (`POST /api/mascotas/propietario/{suId}`) y luego intenta verla autenticado como otro cliente.
 
 Body de la prueba 7:
 
@@ -112,7 +119,8 @@ Body de la prueba 7:
 
 2. Resultado esperado: **200 OK** y la respuesta muestra `"rol": "CLIENTE"` (el sistema ignora el rol enviado) y no incluye `password`.
 3. Comprobación: `GET http://localhost:8080/api/usuarios` con Basic Auth `prueba@correo.cl` / `Clave1234` debe dar **403**, porque es CLIENTE.
-4. Repetir el mismo registro devuelve error porque el email ya existe.
+4. Repetir el mismo registro devuelve **400** porque el email ya existe.
+5. Si el email no es válido, la contraseña tiene menos de 8 caracteres o no mezcla letras y números, o el nombre trae caracteres como `<script>`, la respuesta es **400** e indica qué campo falló.
 
 ### Comprobar el cifrado de contraseñas en MySQL
 
@@ -130,9 +138,21 @@ La columna `password` muestra un hash que empieza con `$2a$`, nunca el texto ori
 | Público | `POST /api/usuarios/registro`, `GET /api/productos` y `/api/productos/**` (excepto `stock-bajo`) |
 | ADMIN (gerente) | `/api/usuarios/**`, crear/editar/borrar productos, `GET /api/ventas` |
 | VETERINARIO y ADMIN | `/api/expedientes/**`, `GET /api/productos/stock-bajo`, `GET /api/citas/entre-fechas`, `GET /api/citas/veterinario/**`, `PUT /api/citas/*/estado` |
-| Cualquier usuario autenticado | Todo lo demás (mascotas, citas, ventas, notificaciones, recompensas) |
+| Cliente autenticado | Solo **sus propios** datos: su usuario, sus mascotas, las citas y expedientes de sus mascotas, sus ventas, recompensas y notificaciones (se verifica con `@PreAuthorize` y `SeguridadService`) |
+| Cualquier otra ruta | Bloqueada (`anyRequest().denyAll()`) |
+
+La autorización tiene dos capas: reglas por URL y verbo en `SecurityConfig`, y `@PreAuthorize` en cada endpoint para verificar que el recurso pertenezca al usuario (evita que un cliente cambie el id en la URL y vea datos ajenos, ataque IDOR).
+
+## 7. Pruebas automatizadas
+
+```powershell
+.\mvnw.cmd test
+```
+
+Usan una base H2 en memoria (no necesitan MySQL ni variables de entorno). `SeguridadIntegrationTest` valida 16 casos: 401 y 403 por rol, IDOR, registro seguro, validación de datos, bloqueo por intentos, rutas no declaradas, ausencia del ciclo JSON y cabeceras de seguridad.
 
 
 ## 8. Limitaciones conocidas
 
-- **CSRF desactivado:** se justifica porque la API es stateless y cada petición envía el encabezado `Authorization`.
+- **CSRF desactivado:** se justifica porque la API es stateless y cada petición envía el encabezado `Authorization`. Si en el futuro un frontend web consume la API desde el navegador, conviene reactivarlo (token en cookie `XSRF-TOKEN`).
+- **Bloqueo por intentos en memoria:** se reinicia al reiniciar la aplicación; con varias instancias habría que guardarlo en una base compartida.

@@ -1,6 +1,7 @@
 package com.petsalud.backendpetsalud.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,5 +35,6 @@ public class Cita {
 
     @ManyToOne
     @JoinColumn(name = "veterinario_id")
+    @JsonIgnoreProperties({"direccion", "telefono"}) // minimización de datos del funcionario
     private Usuario veterinario;
 }

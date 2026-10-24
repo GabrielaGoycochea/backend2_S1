@@ -1,10 +1,14 @@
 package com.petsalud.backendpetsalud.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -34,11 +38,15 @@ public class Mascota {
     // Relaciones
     @ManyToOne
     @JoinColumn(name = "usuario_id")
+    @JsonIgnoreProperties({"direccion", "telefono"})
     private Usuario propietario;
 
+    // Se consultan por sus propios endpoints (con su propia autorización)
+    @JsonIgnore @ToString.Exclude @EqualsAndHashCode.Exclude
     @OneToMany(mappedBy = "mascota", cascade = CascadeType.ALL)
     private List<Cita> citas;
 
+    @JsonIgnore @ToString.Exclude @EqualsAndHashCode.Exclude
     @OneToMany(mappedBy = "mascota", cascade = CascadeType.ALL)
     private List<ExpedienteMedico> expedientesMedicos;
 }

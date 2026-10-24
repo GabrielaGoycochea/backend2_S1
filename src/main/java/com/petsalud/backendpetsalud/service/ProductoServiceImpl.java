@@ -22,6 +22,7 @@ public class ProductoServiceImpl implements ProductoService {
         if (productoExistente.isPresent()) {
             throw new IllegalArgumentException("El producto ya existe");
         }
+        producto.setId(null); // evita sobrescribir otro producto enviando un id en el JSON
         return productoRepository.save(producto);
     }
 
