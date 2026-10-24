@@ -1,5 +1,6 @@
 package com.petsalud.backendpetsalud.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,6 +35,7 @@ public class Mascota {
     // Relaciones
     @ManyToOne
     @JoinColumn(name = "usuario_id")
+    @JsonIgnoreProperties({"mascotas", "ventas", "recompensas", "notificaciones"})
     private Usuario propietario;
 
     @OneToMany(mappedBy = "mascota", cascade = CascadeType.ALL)
