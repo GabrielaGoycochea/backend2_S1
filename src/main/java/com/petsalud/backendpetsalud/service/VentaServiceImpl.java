@@ -3,6 +3,7 @@ package com.petsalud.backendpetsalud.service;
 import com.petsalud.backendpetsalud.entity.Producto;
 import com.petsalud.backendpetsalud.entity.Usuario;
 import com.petsalud.backendpetsalud.entity.Venta;
+import com.petsalud.backendpetsalud.security.AutorizacionService;
 import com.petsalud.backendpetsalud.repository.ProductoRepository;
 import com.petsalud.backendpetsalud.repository.UsuarioRepository;
 import com.petsalud.backendpetsalud.repository.VentaRepository;
@@ -27,8 +28,12 @@ public class VentaServiceImpl implements VentaService {
     @Autowired
     private ProductoRepository productoRepository;
 
+    @Autowired
+    private AutorizacionService autorizacionService;
+
     @Override
     public Venta realizarVenta(Long usuarioId, List<Long> productosIds) {
+        autorizacionService.verificarPropietarioOAdmin(usuarioId);
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
@@ -62,16 +67,32 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     public Optional<Venta> obtenerVentaPorId(Long id) {
-        return ventaRepository.findById(id);
+        Optional<Venta> resultado = ventaRepository.findById(id);
+
+        resultado.ifPresent(venta ->
+                autorizacionService.verificarPropietarioOAdmin(
+                        venta.getUsuario().getId()
+                )
+        );
+
+        return resultado;
     }
 
     @Override
     public List<Venta> listarVentasPorUsuario(Long usuarioId) {
+        autorizacionService.verificarPropietarioOAdmin(usuarioId);
         return ventaRepository.findByUsuarioId(usuarioId);
     }
 
     @Override
     public List<Venta> listarTodasLasVentas() {
+        Usuario usuario = autorizacionService.obtenerUsuarioAutenticado();
+
+        if (usuario.getRol() != com.petsalud.backendpetsalud.entity.Rol.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Solo un administrador puede consultar todas las ventas");
+        }
+
         return ventaRepository.findAll();
     }
 }

@@ -51,7 +51,8 @@ public class SecurityConfig {
 
                         // Empleado y gerente: expedientes y gestion de citas
                         .requestMatchers("/api/expedientes/**").hasAnyAuthority(VETERINARIO, ADMIN)
-                        .requestMatchers(HttpMethod.GET, "/api/citas/entre-fechas", "/api/citas/veterinario/**")
+                        .requestMatchers(HttpMethod.GET, "/api/citas/entre-fechas").hasAuthority(ADMIN)
+                        .requestMatchers(HttpMethod.GET, "/api/citas/veterinario/**")
                                 .hasAnyAuthority(VETERINARIO, ADMIN)
                         .requestMatchers(HttpMethod.PUT, "/api/citas/*/estado").hasAnyAuthority(VETERINARIO, ADMIN)
 
