@@ -33,7 +33,7 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     public Venta realizarVenta(Long usuarioId, List<Long> productosIds) {
-        autorizacionService.verificarPropietarioOAdmin(usuarioId);
+        autorizacionService.verificarPersonalOPropietario(usuarioId);
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 

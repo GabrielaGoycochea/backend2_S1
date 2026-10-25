@@ -6,6 +6,7 @@ import com.petsalud.backendpetsalud.entity.Usuario;
 import com.petsalud.backendpetsalud.repository.ExpedienteMedicoRepository;
 import com.petsalud.backendpetsalud.repository.MascotaRepository;
 import com.petsalud.backendpetsalud.repository.UsuarioRepository;
+import com.petsalud.backendpetsalud.security.AutorizacionService;
 import com.petsalud.backendpetsalud.service.ExpedienteMedicoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,8 +27,13 @@ public class ExpedienteMedicoServiceImpl implements ExpedienteMedicoService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @Autowired
+    private AutorizacionService autorizacionService;
+
     @Override
     public ExpedienteMedico agregarRegistro(Long mascotaId, Long veterinarioId, ExpedienteMedico registro) {
+        autorizacionService.verificarIdentidadVeterinario(veterinarioId);
+
         Mascota mascota = mascotaRepository.findById(mascotaId)
                 .orElseThrow(() -> new IllegalArgumentException("Mascota no encontrada"));
 

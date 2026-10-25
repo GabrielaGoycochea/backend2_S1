@@ -1,5 +1,6 @@
 package com.petsalud.backendpetsalud.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -38,9 +39,11 @@ public class Mascota {
     @JsonIgnoreProperties({"mascotas", "ventas", "recompensas", "notificaciones"})
     private Usuario propietario;
 
+    @JsonIgnore // evita el ciclo Mascota-Cita-Mascota
     @OneToMany(mappedBy = "mascota", cascade = CascadeType.ALL)
     private List<Cita> citas;
 
+    @JsonIgnore // evita el ciclo Mascota-Cita-Mascota
     @OneToMany(mappedBy = "mascota", cascade = CascadeType.ALL)
     private List<ExpedienteMedico> expedientesMedicos;
 }

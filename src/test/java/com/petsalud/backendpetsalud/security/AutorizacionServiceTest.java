@@ -105,4 +105,54 @@ class AutorizacionServiceTest {
 
         verifyNoInteractions(usuarioRepository);
     }
+
+    // ---------- Reglas agregadas en la correccion de permisos ----------
+
+    private void autenticarComo(Long id, String email, Rol rol) {
+        autenticar(email);
+        when(usuarioRepository.findByEmail(email))
+                .thenReturn(Optional.of(crearUsuario(id, email, rol)));
+    }
+
+    @Test
+    void veterinarioPuedeAccederARecursoPropio() {
+        autenticarComo(2L, "vet@petsalud.cl", Rol.VETERINARIO);
+
+        assertDoesNotThrow(() ->
+                autorizacionService.verificarPropietarioOAdmin(2L));
+    }
+
+    @Test
+    void veterinarioPuedeConsultarRecursoDeUnCliente() {
+        autenticarComo(2L, "vet@petsalud.cl", Rol.VETERINARIO);
+
+        assertDoesNotThrow(() ->
+                autorizacionService.verificarPersonalOPropietario(3L));
+    }
+
+    @Test
+    void clienteNoPuedeUsarLaVerificacionDePersonalEnRecursoAjeno() {
+        autenticarComo(4L, "cliente2@petsalud.cl", Rol.CLIENTE);
+
+        assertThrows(AccessDeniedException.class, () ->
+                autorizacionService.verificarPersonalOPropietario(3L));
+    }
+
+    @Test
+    void soloElAdministradorPasaLaVerificacionDeAdmin() {
+        autenticarComo(3L, "cliente@petsalud.cl", Rol.CLIENTE);
+
+        assertThrows(AccessDeniedException.class, () ->
+                autorizacionService.verificarAdmin());
+    }
+
+    @Test
+    void veterinarioSoloRegistraExpedientesConSuPropiaIdentidad() {
+        autenticarComo(2L, "vet@petsalud.cl", Rol.VETERINARIO);
+
+        assertDoesNotThrow(() ->
+                autorizacionService.verificarIdentidadVeterinario(2L));
+        assertThrows(AccessDeniedException.class, () ->
+                autorizacionService.verificarIdentidadVeterinario(5L));
+    }
 }
