@@ -25,7 +25,7 @@ public class MascotaServiceImpl implements MascotaService {
 
     @Override
     public Mascota registrarMascota(Mascota mascota, Long propietarioId) {
-        autorizacionService.verificarPropietarioOAdmin(propietarioId);
+        autorizacionService.verificarPersonalOPropietario(propietarioId);
 
         Usuario propietario = usuarioRepository.findById(propietarioId)
                 .orElseThrow(() ->
@@ -40,7 +40,7 @@ public class MascotaServiceImpl implements MascotaService {
         Optional<Mascota> mascota = mascotaRepository.findById(id);
 
         mascota.ifPresent(m ->
-                autorizacionService.verificarPropietarioOAdmin(
+                autorizacionService.verificarPersonalOPropietario(
                         m.getPropietario().getId()));
 
         return mascota;
@@ -77,7 +77,7 @@ public class MascotaServiceImpl implements MascotaService {
 
     @Override
     public List<Mascota> listarMascotasPorPropietario(Long propietarioId) {
-        autorizacionService.verificarPropietarioOAdmin(propietarioId);
+        autorizacionService.verificarPersonalOPropietario(propietarioId);
         return mascotaRepository.findByPropietarioId(propietarioId);
     }
 }

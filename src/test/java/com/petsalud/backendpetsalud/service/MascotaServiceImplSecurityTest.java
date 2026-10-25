@@ -54,14 +54,14 @@ class MascotaServiceImplSecurityTest {
 
         assertTrue(resultado.isPresent());
         assertEquals("Luna", resultado.get().getNombre());
-        verify(autorizacionService).verificarPropietarioOAdmin(3L);
+        verify(autorizacionService).verificarPersonalOPropietario(3L);
     }
 
     @Test
     void clienteNoPuedeConsultarMascotaAjena() {
         when(mascotaRepository.findById(1L)).thenReturn(Optional.of(luna));
         doThrow(new AccessDeniedException("Acceso denegado"))
-                .when(autorizacionService).verificarPropietarioOAdmin(3L);
+                .when(autorizacionService).verificarPersonalOPropietario(3L);
 
         assertThrows(AccessDeniedException.class,
                 () -> mascotaService.obtenerMascotaPorId(1L));
@@ -98,7 +98,7 @@ class MascotaServiceImplSecurityTest {
     @Test
     void clienteNoPuedeRegistrarMascotaParaOtroPropietario() {
         doThrow(new AccessDeniedException("Acceso denegado"))
-                .when(autorizacionService).verificarPropietarioOAdmin(3L);
+                .when(autorizacionService).verificarPersonalOPropietario(3L);
 
         assertThrows(AccessDeniedException.class,
                 () -> mascotaService.registrarMascota(new Mascota(), 3L));
@@ -109,7 +109,7 @@ class MascotaServiceImplSecurityTest {
     @Test
     void clienteNoPuedeListarMascotasDeOtroPropietario() {
         doThrow(new AccessDeniedException("Acceso denegado"))
-                .when(autorizacionService).verificarPropietarioOAdmin(3L);
+                .when(autorizacionService).verificarPersonalOPropietario(3L);
 
         assertThrows(AccessDeniedException.class,
                 () -> mascotaService.listarMascotasPorPropietario(3L));

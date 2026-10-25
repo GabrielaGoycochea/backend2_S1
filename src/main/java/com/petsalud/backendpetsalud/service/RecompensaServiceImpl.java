@@ -4,6 +4,7 @@ import com.petsalud.backendpetsalud.entity.Recompensa;
 import com.petsalud.backendpetsalud.entity.Usuario;
 import com.petsalud.backendpetsalud.repository.RecompensaRepository;
 import com.petsalud.backendpetsalud.repository.UsuarioRepository;
+import com.petsalud.backendpetsalud.security.AutorizacionService;
 import com.petsalud.backendpetsalud.service.RecompensaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,8 +22,13 @@ public class RecompensaServiceImpl implements RecompensaService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @Autowired
+    private AutorizacionService autorizacionService;
+
     @Override
     public Recompensa agregarRecompensa(Long usuarioId, Recompensa recompensa) {
+        autorizacionService.verificarAdmin();
+
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
@@ -34,16 +40,24 @@ public class RecompensaServiceImpl implements RecompensaService {
 
     @Override
     public Optional<Recompensa> obtenerRecompensaPorId(Long id) {
-        return recompensaRepository.findById(id);
+        Optional<Recompensa> recompensa = recompensaRepository.findById(id);
+
+        recompensa.ifPresent(r ->
+                autorizacionService.verificarPersonalOPropietario(
+                        r.getUsuario() != null ? r.getUsuario().getId() : null));
+
+        return recompensa;
     }
 
     @Override
     public List<Recompensa> listarRecompensasPorUsuario(Long usuarioId) {
+        autorizacionService.verificarPersonalOPropietario(usuarioId);
         return recompensaRepository.findByUsuarioId(usuarioId);
     }
 
     @Override
     public void eliminarRecompensa(Long id) {
+        autorizacionService.verificarAdmin();
         recompensaRepository.deleteById(id);
     }
 }
