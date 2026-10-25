@@ -1,6 +1,8 @@
 package com.petsalud.backendpetsalud.controller;
 
 import com.petsalud.backendpetsalud.entity.Usuario;
+import com.petsalud.backendpetsalud.dto.RegistroUsuarioRequest;
+import jakarta.validation.Valid;
 import com.petsalud.backendpetsalud.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +18,18 @@ public class UsuarioController {
     private UsuarioService usuarioService;
 
     @PostMapping("/registro")
-    public ResponseEntity<Usuario> registrarUsuario(@RequestBody Usuario usuario) {
+    public ResponseEntity<Usuario> registrarUsuario(
+            @Valid @RequestBody RegistroUsuarioRequest datos) {
+
+        Usuario usuario = Usuario.builder()
+                .email(datos.email().trim().toLowerCase(java.util.Locale.ROOT))
+                .password(datos.password())
+                .nombre(datos.nombre())
+                .apellido(datos.apellido())
+                .telefono(datos.telefono())
+                .direccion(datos.direccion())
+                .build();
+
         Usuario nuevoUsuario = usuarioService.registrarUsuario(usuario);
         return ResponseEntity.ok(nuevoUsuario);
     }

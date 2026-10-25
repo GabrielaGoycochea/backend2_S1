@@ -1,5 +1,6 @@
 package com.petsalud.backendpetsalud.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -41,15 +42,19 @@ public class Usuario {
     private Rol rol;
 
     // Relaciones
+    @JsonIgnore // evita ciclos Usuario-Venta-Usuario y no expone datos de otras tablas
     @OneToMany(mappedBy = "propietario", cascade = CascadeType.ALL)
     private List<Mascota> mascotas;
 
+    @JsonIgnore // evita ciclos Usuario-Venta-Usuario y no expone datos de otras tablas
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
     private List<Venta> ventas;
 
+    @JsonIgnore // evita ciclos Usuario-Venta-Usuario y no expone datos de otras tablas
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
     private List<Recompensa> recompensas;
 
+    @JsonIgnore // evita ciclos Usuario-Venta-Usuario y no expone datos de otras tablas
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
     private List<Notificacion> notificaciones;
 }
