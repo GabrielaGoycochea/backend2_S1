@@ -97,19 +97,22 @@ class CitaServiceImplSecurityTest {
     }
 
     @Test
-    void accesoDenegadoImpideConsultarVeterinario() {
-        when(mascotaRepository.findById(1L))
-                .thenReturn(Optional.of(mascota));
+    void clienteNoPuedeConsultarCitaAjena() {
+        Cita cita = new Cita();
+        cita.setId(1L);
+        cita.setMascota(mascota);
 
-        doThrow(new AccessDeniedException("Acceso denegado"))
-                .when(autorizacionService)
-                .verificarPropietarioOAdmin(3L);
+        Usuario clienteAjeno = new Usuario();
+        clienteAjeno.setId(5L);
+        clienteAjeno.setRol(com.petsalud.backendpetsalud.entity.Rol.CLIENTE);
+
+        when(citaRepository.findById(1L))
+                .thenReturn(Optional.of(cita));
+
+        when(autorizacionService.obtenerUsuarioAutenticado())
+                .thenReturn(clienteAjeno);
 
         assertThrows(AccessDeniedException.class,
-                () -> citaService.agendarCita(
-                        1L, 5L, fecha, "Control veterinario"));
-
-        verify(usuarioRepository, never()).findById(anyLong());
-        verify(citaRepository, never()).save(any(Cita.class));
+                () -> citaService.obtenerCitaPorId(1L));
     }
 }
