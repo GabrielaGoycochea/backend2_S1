@@ -26,6 +26,9 @@ public class JwtUtil {
     @Value("${jwt.expiration-ms}")
     private long expirationMs;
 
+    @Value("${jwt.issuer}")
+    private String issuer;
+
     private SecretKey getKey() {
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
     }
@@ -36,6 +39,7 @@ public class JwtUtil {
                 .toList();
         Date ahora = new Date();
         return Jwts.builder()
+                .issuer(issuer)
                 .subject(usuario.getUsername())
                 .claim("roles", roles)
                 .issuedAt(ahora)
@@ -50,14 +54,17 @@ public class JwtUtil {
 
     public boolean validarToken(String token, UserDetails usuario) {
         Claims claims = extraerClaims(token);
-        return claims.getSubject().equals(usuario.getUsername())
-                && claims.getExpiration().after(new Date());
+        return claims.getSubject() != null
+                && !claims.getSubject().isBlank()
+                && claims.getSubject().equals(usuario.getUsername())
+                && claims.getExpiration() != null;
     }
 
     // Verifica la firma; lanza JwtException si el token fue alterado, no esta firmado o expiro
     private Claims extraerClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getKey())
+                .requireIssuer(issuer)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
