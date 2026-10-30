@@ -20,17 +20,18 @@ import java.util.List;
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret}")
-    private String secret;
+    private final SecretKey key;
+    private final long expirationMs;
+    private final String issuer;
 
-    @Value("${jwt.expiration-ms}")
-    private long expirationMs;
-
-    @Value("${jwt.issuer}")
-    private String issuer;
-
-    private SecretKey getKey() {
-        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
+    public JwtUtil(@Value("${jwt.secret}") String secret, @Value("${jwt.expiration-ms}") long expirationMs, @Value("${jwt.issuer}") String issuer) {
+        byte[] bytes = Decoders.BASE64.decode(secret);
+        if (bytes.length < 32) {
+            throw new IllegalArgumentException("La clave JWT debe contener al menos 32 bytes");
+        }
+        this.key = Keys.hmacShaKeyFor(bytes);
+        this.expirationMs = expirationMs;
+        this.issuer = issuer;
     }
 
     public String generarToken(UserDetails usuario) {
@@ -44,7 +45,7 @@ public class JwtUtil {
                 .claim("roles", roles)
                 .issuedAt(ahora)
                 .expiration(new Date(ahora.getTime() + expirationMs))
-                .signWith(getKey(), Jwts.SIG.HS256)
+                .signWith(key, Jwts.SIG.HS256)
                 .compact();
     }
 
@@ -63,7 +64,7 @@ public class JwtUtil {
     // Verifica la firma; lanza JwtException si el token fue alterado, no esta firmado o expiro
     private Claims extraerClaims(String token) {
         return Jwts.parser()
-                .verifyWith(getKey())
+                .verifyWith(key)
                 .requireIssuer(issuer)
                 .build()
                 .parseSignedClaims(token)

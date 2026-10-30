@@ -8,7 +8,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.test.util.ReflectionTestUtils;
 import javax.crypto.SecretKey;
 import java.util.Arrays;
 import java.util.Base64;
@@ -26,10 +25,7 @@ class JwtUtilTest {
         byte[] bytes = new byte[32];
         Arrays.fill(bytes, (byte) 7);
         key = Keys.hmacShaKeyFor(bytes);
-        jwtUtil = new JwtUtil();
-        ReflectionTestUtils.setField(jwtUtil, "secret", Base64.getEncoder().encodeToString(bytes));
-        ReflectionTestUtils.setField(jwtUtil, "expirationMs", 1800000L);
-        ReflectionTestUtils.setField(jwtUtil, "issuer", "PetSalud");
+        jwtUtil = new JwtUtil(Base64.getEncoder().encodeToString(bytes), 1800000L, "PetSalud");
         usuario = User.withUsername("cliente@petsalud.cl").password("solo-prueba").authorities("CLIENTE").build();
     }
 
@@ -80,5 +76,11 @@ class JwtUtilTest {
     void rechazaTokenSinExpiracion() {
         String token = Jwts.builder().issuer("PetSalud").subject(usuario.getUsername()).signWith(key, Jwts.SIG.HS256).compact();
         assertFalse(jwtUtil.validarToken(token, usuario));
+    }
+    @Test
+    void rechazaClaveJwtDemasiadoCorta() {
+        String claveCorta = Base64.getEncoder().encodeToString(new byte[16]);
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> new JwtUtil(claveCorta, 1800000L, "PetSalud"));
+        assertTrue(error.getMessage().contains("32 bytes"));
     }
 }
