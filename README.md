@@ -1,6 +1,6 @@
 # Backend Clínica PetSalud
 
-API REST con Spring Boot 3, Spring Security (usuario y contraseña con HTTP Basic), JPA y MySQL.
+API REST con Spring Boot 3, Spring Security con autenticación JWT (stateless), JPA y MySQL.
 
 ## 1. Requisitos
 
@@ -27,10 +27,37 @@ spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+
+jwt.secret=${JWT_SECRET}
+jwt.expiration-ms=1800000
+jwt.issuer=PetSalud
+
+login.max-attempts=5
+login.lock-minutes=5
 ```
 
+Los valores `${...}` no se escriben en el archivo: Spring los lee de las variables de entorno del equipo.
+
+| Variable | Se usa en | Qué contiene |
+|---|---|---|
+| `${DB_USERNAME}` | `spring.datasource.username` | Usuario de MySQL |
+| `${DB_PASSWORD}` | `spring.datasource.password` | Contraseña de MySQL |
+| `${JWT_SECRET}` | `jwt.secret` | Clave de firma de los JWT (Base64, mínimo 32 bytes) |
+
 - El proyecto está configurado con el puerto `3307`. Cámbialo (por ejemplo a `3306`) si tu MySQL usa otro.
-- Las variables de entorno `DB_USERNAME` y `DB_PASSWORD` deben existir antes de abrir la terminal.
+- Las variables `${DB_USERNAME}`, `${DB_PASSWORD}` y `${JWT_SECRET}` deben existir como variables de entorno **antes de ejecutar la aplicación y en la misma terminal (o configuración de ejecución del IDE) desde donde se ejecuta**. Sin `${JWT_SECRET}` la aplicación no arranca.
+- `JWT_SECRET` es la clave de firma de los tokens: debe estar en **Base64** y tener al menos 32 bytes. Ejemplo para definir las tres variables en PowerShell (solo para la ventana actual):
+
+```powershell
+$env:DB_USERNAME="root"
+$env:DB_PASSWORD="tu_clave_mysql"
+$b = New-Object byte[] 32
+[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b)
+$env:JWT_SECRET=[Convert]::ToBase64String($b)
+```
+
+- La duración del token se define en `jwt.expiration-ms` (por defecto 30 minutos) y el emisor en `jwt.issuer`.
+- El bloqueo del login se configura con `login.max-attempts` (5 intentos) y `login.lock-minutes` (5 minutos).
 - `createDatabaseIfNotExist=true` crea la base `petsalud_db` si no existe. Las tablas las crea Hibernate al iniciar.
 
 ## 3. Cómo ejecutar
@@ -48,6 +75,17 @@ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
 
 Para detenerla, presiona `Ctrl + C` en la terminal.
 
+### Si la aplicación no arranca
+
+Aunque Maven termine con `BUILD SUCCESS`, la aplicación puede no haber iniciado. Revisa la consola:
+
+- `Could not resolve placeholder 'JWT_SECRET' in value "${JWT_SECRET}"` (o `DB_USERNAME` / `DB_PASSWORD`): la variable no está definida en el lugar desde donde ejecutas.
+  - En PowerShell, las variables definidas con `$env:` solo valen para esa ventana: define las tres y ejecuta `.\mvnw.cmd ...` en la **misma** ventana.
+  - Comprueba que existe con `echo $env:JWT_SECRET`.
+  - Si ejecutas desde un IDE (IntelliJ, VS Code, Eclipse), define las variables en la configuración de ejecución (*Environment variables*) o abre el IDE desde la terminal donde las definiste.
+  - Si las definiste con `setx` o en las variables del sistema, cierra y vuelve a abrir la terminal o el IDE para que las tomen.
+- Errores de conexión a MySQL: revisa que MySQL esté encendido, el puerto (`3307`) y los valores de `${DB_USERNAME}` y `${DB_PASSWORD}`.
+
 ## 4. Usuarios de prueba (perfil `prueba`)
 
 Se crean automáticamente al iniciar, si no existen. La contraseña de los tres es `Petsalud2026!`.
@@ -63,20 +101,35 @@ Se crean automáticamente al iniciar, si no existen. La contraseña de los tres 
 ### Cómo configurar cada petición
 
 1. Crea una petición nueva (**New → HTTP**) con el método y la URL indicados (De no funcionar localhost:8080, probar 127.0.0.1:8080)
-2. Pestaña **Authorization**: tipo **Basic Auth**. En *Username* escribe el email y en *Password* la contraseña. Para probar sin credenciales, deja el tipo en **No Auth**.
-3. Para las peticiones POST con datos: pestaña **Body → raw → JSON**.
-4. Presiona **Send** y revisa el código de estado (arriba a la derecha de la respuesta). Guarda una captura de cada prueba para el informe.
+2. Para autenticarte, primero haz login: `POST http://localhost:8080/api/auth/login` con Body → raw → JSON, por ejemplo `{"email": "admin@petsalud.cl", "password": "Petsalud2026!"}`. La respuesta trae `{"token": "..."}`.
+3. En las demás peticiones, pestaña **Authorization**: tipo **Bearer Token** y pega el token (o usa una variable, ver más abajo). Para probar sin credenciales, deja el tipo en **No Auth**.
+4. Para las peticiones POST con datos: pestaña **Body → raw → JSON**.
+5. Presiona **Send** y revisa el código de estado (arriba a la derecha de la respuesta). Guarda una captura de cada prueba para el informe.
 
 Se recomienda crear una **Collection** llamada "PetSalud" y guardar ahí las pruebas.
 
+**Collection lista para importar:** `postman/PetSalud_Semana2.postman_collection.json` (Postman → **Import**). Trae las pruebas 1 a 15 del informe, guarda los tokens e ids como variables de la colección y valida cada código de estado. Ejecuta las carpetas `00` a `04` en orden (con **Run collection** puedes ver todo en verde); la carpeta `05` (token vencido y desbloqueo a los 5 minutos) se ejecuta a mano. La carpeta `04` bloquea a `cliente@petsalud.cl` por 5 minutos: si repites la corrida antes de ese plazo, reinicia la aplicación.
+
+Para no copiar el token a mano, en la pestaña **Scripts → Post-response** (o **Tests**) de cada login agrega:
+
+```javascript
+pm.environment.set("token", pm.response.json().token);
+```
+
+y en las peticiones usa **Bearer Token** con el valor `{{token}}`. Para alternar entre roles, guarda un token por rol (`tokenAdmin`, `tokenVet`, `tokenCliente`). El token dura 30 minutos: si una petición responde 401 sin motivo, vuelve a hacer login.
+
 ### Pruebas de seguridad
 
-| # | Petición | Autenticación | Resultado esperado |
+| # | Petición | Autenticación (Bearer Token del usuario indicado) | Resultado esperado |
 |---|---|---|---|
 | 1 | `GET http://localhost:8080/api/usuarios` | Ninguna | **401 Unauthorized** |
 | 2 | `GET http://localhost:8080/api/usuarios` | `cliente@petsalud.cl` | **403 Forbidden** (rol insuficiente) |
 | 3 | `GET http://localhost:8080/api/usuarios` | `admin@petsalud.cl` | **200 OK**, lista de usuarios **sin** el campo `password` |
-| 4 | `GET http://localhost:8080/api/usuarios` | `admin@petsalud.cl` con contraseña incorrecta | **401** y en la consola de Spring aparece `LOGIN FALLIDO` |
+| 4 | `POST http://localhost:8080/api/auth/login` con la contraseña de `admin@petsalud.cl` incorrecta | Ninguna | **401** ("Credenciales invalidas") y en la consola de Spring aparece `LOGIN FALLIDO` |
+| 4a | `POST http://localhost:8080/api/auth/login` con clave incorrecta, **5 veces seguidas** (usa `cliente@petsalud.cl`) | Ninguna | Intentos 1 a 5: **401**. En el 5.º aparece `CUENTA BLOQUEADA` en la consola |
+| 4c | El mismo login (ahora **con la clave correcta**) inmediatamente después | Ninguna | **429 Too Many Requests**, con encabezado `Retry-After` y el mensaje de cuenta bloqueada |
+| 4d | El mismo login con la clave correcta pasados **5 minutos** | Ninguna | **200 OK** con token (bloqueo terminado) |
+| 4b | `GET http://localhost:8080/api/usuarios` | Bearer Token del admin con un carácter alterado | **401** (firma inválida) |
 | 5 | `GET http://localhost:8080/api/productos` | Ninguna | **200 OK** (el catálogo es público) |
 | 6 | `POST http://localhost:8080/api/productos` | `cliente@petsalud.cl` | **403 Forbidden** |
 | 7 | `POST http://localhost:8080/api/productos` | `admin@petsalud.cl` | **200 OK**, producto creado |
@@ -103,6 +156,17 @@ Body de la prueba 7:
 }
 ```
 
+### Bloqueo por intentos fallidos (lockout)
+
+Tras **5 intentos de login fallidos** con un mismo email, ese email queda bloqueado **5 minutos**:
+
+- Intentos 1 a 5 con clave incorrecta: **401 Unauthorized**.
+- Desde el 6.º intento, durante el bloqueo, el login responde **429 Too Many Requests** (con `Retry-After` en segundos), aunque la clave sea correcta. Los intentos durante el bloqueo no lo extienden.
+- Pasados los 5 minutos, el email puede volver a iniciar sesión. Un login correcto antes del 5.º fallo reinicia el contador, y los fallos más antiguos que 5 minutos no se acumulan.
+- El bloqueo es por email (sin distinguir mayúsculas) y se guarda en memoria: se reinicia si se reinicia la aplicación.
+- Para una demostración rápida, arranca con 1 minuto de bloqueo: `.\mvnw.cmd clean spring-boot:run "-Dspring-boot.run.profiles=prueba" "-Dspring-boot.run.arguments=--login.lock-minutes=1"`.
+- Usa `cliente@petsalud.cl` para probar, para no bloquear la cuenta del admin que necesitas en las demás pruebas.
+
 ### Prueba de registro y escalada de privilegios
 
 1. `POST http://localhost:8080/api/usuarios/registro`, sin autenticación (**No Auth**), con este body. Se envía `"rol": "ADMIN"` a propósito:
@@ -120,7 +184,7 @@ Body de la prueba 7:
 ```
 
 2. Resultado esperado: **200 OK** y la respuesta muestra `"rol": "CLIENTE"` (el sistema ignora el rol enviado) y no incluye `password`.
-3. Comprobación: `GET http://localhost:8080/api/usuarios` con Basic Auth `prueba@correo.cl` / `Clave1234` debe dar **403**, porque es CLIENTE.
+3. Comprobación: haz login con `prueba@correo.cl` / `Clave1234` y usa el token en `GET http://localhost:8080/api/usuarios`: debe dar **403**, porque es CLIENTE.
 4. Repetir el mismo registro devuelve **400 Bad Request** porque el email ya existe.
 
 ### Comprobar el cifrado de contraseñas en MySQL
@@ -150,14 +214,15 @@ La autorización tiene dos capas: las reglas por ruta y rol de `SecurityConfig`,
 Las pruebas unitarias verifican las reglas de autorización de los servicios (`AutorizacionServiceTest` y las `*SecurityTest`) y no necesitan base de datos:
 
 ```powershell
-.\mvnw.cmd test "-Dtest=*SecurityTest,AutorizacionServiceTest"
+.\mvnw.cmd test "-Dtest=*SecurityTest,AutorizacionServiceTest,Jwt*Test,SecurityConfigHttpTest,LoginAttemptServiceTest,AuthLockoutTest"
 ```
 
-`.\mvnw.cmd test` sin filtro también ejecuta `BackendpetsaludApplicationTests`, que levanta la aplicación completa y **requiere MySQL encendido y las variables `DB_USERNAME` y `DB_PASSWORD`**.
+`.\mvnw.cmd test` sin filtro también ejecuta `BackendpetsaludApplicationTests`, que levanta la aplicación completa y **requiere MySQL encendido y las variables `${DB_USERNAME}`, `${DB_PASSWORD}` y `${JWT_SECRET}`**.
 
 ## 8. Limitaciones conocidas
 
 - **CSRF desactivado:** se justifica porque la API es stateless y cada petición envía el encabezado `Authorization`.
 - **Citas:** el veterinario asignado no se valida contra su rol y los estados de una cita no están restringidos a una lista. El veterinario tampoco agenda citas (las agenda el cliente o el ADMIN).
-- **Sin bloqueo por intentos fallidos:** los logins fallidos solo se registran en el log (`LOGIN FALLIDO`).
+- **JWT sin revocación ni refresh:** un token es válido hasta que expira (30 minutos); no hay lista de tokens revocados ni token de refresco.
+- **Bloqueo en memoria:** el contador de intentos fallidos no se comparte entre varias instancias ni sobrevive a un reinicio. Además, quien conozca un email puede bloquearlo 5 minutos con intentos fallidos (compromiso habitual de este mecanismo).
 - **Pruebas:** la verificación de rutas y roles completa se hace con Postman; las pruebas automáticas cubren solo las reglas de los servicios.
