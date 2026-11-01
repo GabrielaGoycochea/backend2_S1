@@ -1,1030 +1,1363 @@
 {
-  "info": {
-    "_postman_id": "d9be0173-285f-4ebb-a825-39719bc197b4",
-    "name": "PETSALUD - Semana 2 - JWT (importada)",
-    "description": "Colección de prueba basada en las rutas verificadas en los controladores. No incluye operaciones que modifiquen entidades. Las cuentas y los IDs no están verificados. Evitar compartir credenciales o tokens.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "56524231",
-    "_collection_link": "https://go.postman.co/collection/56524231-d9be0173-285f-4ebb-a825-39719bc197b4?source=collection_link"
-  },
-  "item": [
-    {
-      "name": "00 - Autenticación JWT",
-      "item": [
-        {
-          "name": "01 - Login JWT",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
-                  "  try {",
-                  "    const r = pm.response.json();",
-                  "    const token = r.token || r.accessToken || r.jwt || r.jwtToken;",
-                  "    if (typeof token === \"string\" && token.length) {",
-                  "      pm.collectionVariables.set(\"jwtToken\", token);",
-                  "      console.log(\"JWT guardado en jwtToken.\");",
-                  "    } else {",
-                  "      console.warn(\"No se detectó un campo de token conocido. Revisa la respuesta.\");",
-                  "    }",
-                  "  } catch (e) { console.warn(\"La respuesta no es JSON.\"); }",
-                  "}"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{correoPrueba}}\",\n  \"password\": \"{{clavePrueba}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "login"
-              ]
-            },
-            "description": "Se requiere una cuenta existente y válida. No guardar/exportar contraseñas ni tokens reales."
-          },
-          "response": []
-        },
-        {
-          "name": "02 - Login vacío (control negativo)",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"\",\n  \"password\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "login"
-              ]
-            },
-            "description": "Verificar que no se entregue un JWT."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "01 - Controles sin autenticación",
-      "item": [
-        {
-          "name": "01 - Listar usuarios sin token",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/usuarios",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "usuarios"
-              ]
-            },
-            "description": "Verificar contra las reglas reales de SecurityConfig si se espera 401/403."
-          },
-          "response": []
-        },
-        {
-          "name": "02 - Mascota por ID sin token",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/mascotas/{{mascotaId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "mascotas",
-                "{{mascotaId}}"
-              ]
-            },
-            "description": "Comprobar protección de datos de mascotas; ID todavía no validado."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "02 - Usuarios",
-      "item": [
-        {
-          "name": "GET - Listar usuarios",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/usuarios",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "usuarios"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "GET - Usuario por ID",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/usuarios/{{usuarioId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "usuarios",
-                "{{usuarioId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Figura 18 - JWT válido",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/usuarios",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "usuarios"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Figura 18 - JWT firma alterada",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const original = pm.collectionVariables.get(\"jwtToken\");\r\n\r\nif (!original || original.split(\".\").length !== 3) {\r\n    throw new Error(\"No se encontró un JWT válido. Inicia sesión primero.\");\r\n}\r\n\r\nconst partes = original.split(\".\");\r\n\r\n// Cambiar solamente el primer carácter de la firma.\r\nconst firma = partes[2];\r\n\r\npartes[2] = (firma[0] === \"A\" ? \"B\" : \"A\")\r\n    + firma.slice(1);\r\n\r\n// Guardar el JWT alterado sin modificar el original.\r\npm.collectionVariables.set(\r\n    \"jwtTokenAlterado\",\r\n    partes.join(\".\")\r\n);\r\n\r\nconsole.log(\"JWT con firma alterada preparado.\");"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtTokenAlterado}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/usuarios",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "usuarios"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Figura 19 - JWT vencido",
-          "event": [
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const guardado = pm.collectionVariables.get(\"jwtTokenFijo19\");\r\n\r\nif (!guardado) {\r\n    const original = pm.collectionVariables.get(\"jwtToken\");\r\n\r\n    if (!original || original.split(\".\").length !== 3) {\r\n        throw new Error(\"Primero debes iniciar sesión y obtener un JWT válido.\");\r\n    }\r\n\r\n    pm.collectionVariables.set(\"jwtTokenFijo19\", original);\r\n    console.log(\"JWT original guardado para comprobar su vencimiento.\");\r\n} else {\r\n    console.log(\"Se conserva el mismo JWT para verificar su expiración.\");\r\n}"
-                ]
-              }
-            },
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const token = pm.collectionVariables.get(\"jwtTokenFijo19\");\r\n\r\npm.test(\"Existe un JWT para comprobar\", function () {\r\n    pm.expect(token).to.be.a(\"string\");\r\n    pm.expect(token.split(\".\")).to.have.lengthOf(3);\r\n});\r\n\r\nif (token && token.split(\".\").length === 3) {\r\n    const base64 = token.split(\".\")[1]\r\n        .replace(/-/g, \"+\")\r\n        .replace(/_/g, \"/\");\r\n\r\n    const payload = JSON.parse(\r\n        atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, \"=\"))\r\n    );\r\n\r\n    const duracion = payload.exp - payload.iat;\r\n    const vencido = Date.now() >= payload.exp * 1000;\r\n\r\n    console.log(\"Emisión:\", new Date(payload.iat * 1000).toISOString());\r\n    console.log(\"Vencimiento:\", new Date(payload.exp * 1000).toISOString());\r\n    console.log(\"Duración:\", duracion, \"segundos\");\r\n    console.log(\"Token vencido:\", vencido);\r\n\r\n    pm.test(\"JWT configurado para durar 60 segundos\", function () {\r\n        pm.expect(duracion).to.eql(60);\r\n    });\r\n\r\n    pm.test(\"Respuesta correcta según la vigencia del JWT\", function () {\r\n        pm.response.to.have.status(vencido ? 401 : 200);\r\n    });\r\n}"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtTokenFijo19}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/usuarios",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "usuarios"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "03 - Mascotas",
-      "item": [
-        {
-          "name": "GET - Mascota por ID",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/mascotas/{{mascotaId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "mascotas",
-                "{{mascotaId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "GET - Mascotas del propietario",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/mascotas/propietario/{{propietarioId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "mascotas",
-                "propietario",
-                "{{propietarioId}}"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "04 - Citas",
-      "item": [
-        {
-          "name": "GET - Cita por ID",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/citas/{{citaId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "citas",
-                "{{citaId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "GET - Citas de mascota",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/citas/mascota/{{mascotaId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "citas",
-                "mascota",
-                "{{mascotaId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "GET - Citas de veterinario",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/citas/veterinario/{{veterinarioId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "citas",
-                "veterinario",
-                "{{veterinarioId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "GET - Citas entre fechas (revisar parámetros)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/citas/entre-fechas",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "citas",
-                "entre-fechas"
-              ]
-            },
-            "description": "La ruta está confirmada; faltan los nombres exactos de los parámetros."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "05 - Expedientes",
-      "item": [
-        {
-          "name": "GET - Expediente por ID",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/expedientes/{{expedienteId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "expedientes",
-                "{{expedienteId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "GET - Expedientes de mascota",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/expedientes/mascota/{{mascotaId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "expedientes",
-                "mascota",
-                "{{mascotaId}}"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "06 - Productos",
-      "item": [
-        {
-          "name": "GET - Listar productos",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/productos",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "productos"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "GET - Producto por ID",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/productos/{{productoId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "productos",
-                "{{productoId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "GET - Por categoría (revisar parámetros)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/productos/categoria",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "productos",
-                "categoria"
-              ]
-            },
-            "description": "Revisar parámetros antes de ejecutar."
-          },
-          "response": []
-        },
-        {
-          "name": "GET - Stock bajo",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/productos/stock-bajo",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "productos",
-                "stock-bajo"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "07 - Ventas",
-      "item": [
-        {
-          "name": "GET - Listar ventas",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/ventas",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "ventas"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "GET - Venta por ID",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/ventas/{{ventaId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "ventas",
-                "{{ventaId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "GET - Ventas de usuario",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/ventas/usuario/{{usuarioId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "ventas",
-                "usuario",
-                "{{usuarioId}}"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "08 - Notificaciones",
-      "item": [
-        {
-          "name": "GET - Notificación por ID",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/notificaciones/{{notificacionId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "notificaciones",
-                "{{notificacionId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "GET - Notificaciones de usuario",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/notificaciones/usuario/{{usuarioId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "notificaciones",
-                "usuario",
-                "{{usuarioId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "GET - No leídas",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/notificaciones/usuario/{{usuarioId}}/no-leidas",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "notificaciones",
-                "usuario",
-                "{{usuarioId}}",
-                "no-leidas"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "09 - Recompensas",
-      "item": [
-        {
-          "name": "GET - Recompensa por ID",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/recompensas/{{recompensaId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "recompensas",
-                "{{recompensaId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "GET - Recompensas de usuario",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/recompensas/usuario/{{usuarioId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "recompensas",
-                "usuario",
-                "{{usuarioId}}"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    }
-  ],
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:8080"
-    },
-    {
-      "key": "correoPrueba",
-      "value": ""
-    },
-    {
-      "key": "clavePrueba",
-      "secret": true
-    },
-    {
-      "key": "jwtToken",
-      "value": ""
-    },
-    {
-      "key": "usuarioId",
-      "value": "1"
-    },
-    {
-      "key": "propietarioId",
-      "value": "1"
-    },
-    {
-      "key": "veterinarioId",
-      "value": "1"
-    },
-    {
-      "key": "mascotaId",
-      "value": "1"
-    },
-    {
-      "key": "citaId",
-      "value": "1"
-    },
-    {
-      "key": "expedienteId",
-      "value": "1"
-    },
-    {
-      "key": "productoId",
-      "value": "1"
-    },
-    {
-      "key": "ventaId",
-      "value": "1"
-    },
-    {
-      "key": "notificacionId",
-      "value": "1"
-    },
-    {
-      "key": "recompensaId",
-      "value": "1"
-    },
-    {
-      "key": "jwtTokenAlterado",
-      "value": ""
-    },
-    {
-      "key": "jwtTokenFijo19",
-      "value": ""
-    }
-  ]
+    "info":  {
+                 "_postman_id":  "d9be0173-285f-4ebb-a825-39719bc197b4",
+                 "name":  "PETSALUD - Semana 2 - JWT (importada)",
+                 "description":  "Colección de pruebas PETSALUD Semana 2 con solicitudes GET y POST, autenticación JWT y evidencias del informe. Algunas operaciones modifican datos y deben ejecutarse en un entorno de pruebas. No compartir credenciales ni tokens reales.",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+                 "_exporter_id":  "56524231",
+                 "_collection_link":  "https://go.postman.co/collection/56524231-d9be0173-285f-4ebb-a825-39719bc197b4?source=collection_link"
+             },
+    "item":  [
+                 {
+                     "name":  "00 - Autenticación JWT",
+                     "item":  [
+                                  {
+                                      "name":  "01 - Login JWT",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "if (pm.response.code \u003e= 200 \u0026\u0026 pm.response.code \u003c 300) {",
+                                                                                    "  try {",
+                                                                                    "    const r = pm.response.json();",
+                                                                                    "    const token = r.token || r.accessToken || r.jwt || r.jwtToken;",
+                                                                                    "    if (typeof token === \"string\" \u0026\u0026 token.length) {",
+                                                                                    "      pm.collectionVariables.set(\"jwtToken\", token);",
+                                                                                    "      console.log(\"JWT guardado en jwtToken.\");",
+                                                                                    "    } else {",
+                                                                                    "      console.warn(\"No se detectó un campo de token conocido. Revisa la respuesta.\");",
+                                                                                    "    }",
+                                                                                    "  } catch (e) { console.warn(\"La respuesta no es JSON.\"); }",
+                                                                                    "}"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "noauth"
+                                                               },
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"email\": \"{{correoPrueba}}\",\n  \"password\": \"{{clavePrueba}}\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/auth/login",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "auth",
+                                                                               "login"
+                                                                           ]
+                                                              },
+                                                      "description":  "Se requiere una cuenta existente y válida. No guardar/exportar contraseñas ni tokens reales."
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "02 - Login vacío (control negativo)",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "noauth"
+                                                               },
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"email\": \"\",\n  \"password\": \"\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/auth/login",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "auth",
+                                                                               "login"
+                                                                           ]
+                                                              },
+                                                      "description":  "Verificar que no se entregue un JWT."
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "01 - Controles sin autenticación",
+                     "item":  [
+                                  {
+                                      "name":  "01 - Listar usuarios sin token",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "noauth"
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/usuarios",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "usuarios"
+                                                                           ]
+                                                              },
+                                                      "description":  "Verificar contra las reglas reales de SecurityConfig si se espera 401/403."
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "02 - Mascota por ID sin token",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "noauth"
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/mascotas/{{mascotaId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "mascotas",
+                                                                               "{{mascotaId}}"
+                                                                           ]
+                                                              },
+                                                      "description":  "Comprobar protección de datos de mascotas; ID todavía no validado."
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "02 - Usuarios",
+                     "item":  [
+                                  {
+                                      "name":  "GET - Listar usuarios",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/usuarios",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "usuarios"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "GET - Usuario por ID",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/usuarios/{{usuarioId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "usuarios",
+                                                                               "{{usuarioId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Figura 18 - JWT válido",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/usuarios",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "usuarios"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Figura 18 - JWT firma alterada",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "prerequest",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const original = pm.collectionVariables.get(\"jwtToken\");\r\n\r\nif (!original || original.split(\".\").length !== 3) {\r\n    throw new Error(\"No se encontró un JWT válido. Inicia sesión primero.\");\r\n}\r\n\r\nconst partes = original.split(\".\");\r\n\r\n// Cambiar solamente el primer carácter de la firma.\r\nconst firma = partes[2];\r\n\r\npartes[2] = (firma[0] === \"A\" ? \"B\" : \"A\")\r\n    + firma.slice(1);\r\n\r\n// Guardar el JWT alterado sin modificar el original.\r\npm.collectionVariables.set(\r\n    \"jwtTokenAlterado\",\r\n    partes.join(\".\")\r\n);\r\n\r\nconsole.log(\"JWT con firma alterada preparado.\");"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtTokenAlterado}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/usuarios",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "usuarios"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Figura 19 - JWT vencido",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "prerequest",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const guardado = pm.collectionVariables.get(\"jwtTokenFijo19\");\r\n\r\nif (!guardado) {\r\n    const original = pm.collectionVariables.get(\"jwtToken\");\r\n\r\n    if (!original || original.split(\".\").length !== 3) {\r\n        throw new Error(\"Primero debes iniciar sesión y obtener un JWT válido.\");\r\n    }\r\n\r\n    pm.collectionVariables.set(\"jwtTokenFijo19\", original);\r\n    console.log(\"JWT original guardado para comprobar su vencimiento.\");\r\n} else {\r\n    console.log(\"Se conserva el mismo JWT para verificar su expiración.\");\r\n}"
+                                                                                ]
+                                                                   }
+                                                    },
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const token = pm.collectionVariables.get(\"jwtTokenFijo19\");\r\n\r\npm.test(\"Existe un JWT para comprobar\", function () {\r\n    pm.expect(token).to.be.a(\"string\");\r\n    pm.expect(token.split(\".\")).to.have.lengthOf(3);\r\n});\r\n\r\nif (token \u0026\u0026 token.split(\".\").length === 3) {\r\n    const base64 = token.split(\".\")[1]\r\n        .replace(/-/g, \"+\")\r\n        .replace(/_/g, \"/\");\r\n\r\n    const payload = JSON.parse(\r\n        atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, \"=\"))\r\n    );\r\n\r\n    const duracion = payload.exp - payload.iat;\r\n    const vencido = Date.now() \u003e= payload.exp * 1000;\r\n\r\n    console.log(\"Emisión:\", new Date(payload.iat * 1000).toISOString());\r\n    console.log(\"Vencimiento:\", new Date(payload.exp * 1000).toISOString());\r\n    console.log(\"Duración:\", duracion, \"segundos\");\r\n    console.log(\"Token vencido:\", vencido);\r\n\r\n    pm.test(\"JWT configurado para durar 60 segundos\", function () {\r\n        pm.expect(duracion).to.eql(60);\r\n    });\r\n\r\n    pm.test(\"Respuesta correcta según la vigencia del JWT\", function () {\r\n        pm.response.to.have.status(vencido ? 401 : 200);\r\n    });\r\n}"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtTokenFijo19}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/usuarios",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "usuarios"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "03 - Mascotas",
+                     "item":  [
+                                  {
+                                      "name":  "GET - Mascota por ID",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/mascotas/{{mascotaId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "mascotas",
+                                                                               "{{mascotaId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "GET - Mascotas del propietario",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/mascotas/propietario/{{propietarioId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "mascotas",
+                                                                               "propietario",
+                                                                               "{{propietarioId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "04 - Citas",
+                     "item":  [
+                                  {
+                                      "name":  "GET - Cita por ID",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/citas/{{citaId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "citas",
+                                                                               "{{citaId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "GET - Citas de mascota",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/citas/mascota/{{mascotaId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "citas",
+                                                                               "mascota",
+                                                                               "{{mascotaId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "GET - Citas de veterinario",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/citas/veterinario/{{veterinarioId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "citas",
+                                                                               "veterinario",
+                                                                               "{{veterinarioId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "GET - Citas entre fechas (revisar parámetros)",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/citas/entre-fechas",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "citas",
+                                                                               "entre-fechas"
+                                                                           ]
+                                                              },
+                                                      "description":  "La ruta está confirmada; faltan los nombres exactos de los parámetros."
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "05 - Expedientes",
+                     "item":  [
+                                  {
+                                      "name":  "GET - Expediente por ID",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/expedientes/{{expedienteId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "expedientes",
+                                                                               "{{expedienteId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "GET - Expedientes de mascota",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/expedientes/mascota/{{mascotaId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "expedientes",
+                                                                               "mascota",
+                                                                               "{{mascotaId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "06 - Productos",
+                     "item":  [
+                                  {
+                                      "name":  "GET - Listar productos",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/productos",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "productos"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "GET - Producto por ID",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/productos/{{productoId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "productos",
+                                                                               "{{productoId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "GET - Por categoría (revisar parámetros)",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/productos/categoria",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "productos",
+                                                                               "categoria"
+                                                                           ]
+                                                              },
+                                                      "description":  "Revisar parámetros antes de ejecutar."
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "GET - Stock bajo",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/productos/stock-bajo",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "productos",
+                                                                               "stock-bajo"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "07 - Ventas",
+                     "item":  [
+                                  {
+                                      "name":  "GET - Listar ventas",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/ventas",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "ventas"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "GET - Venta por ID",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/ventas/{{ventaId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "ventas",
+                                                                               "{{ventaId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "GET - Ventas de usuario",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/ventas/usuario/{{usuarioId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "ventas",
+                                                                               "usuario",
+                                                                               "{{usuarioId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "08 - Notificaciones",
+                     "item":  [
+                                  {
+                                      "name":  "GET - Notificación por ID",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/notificaciones/{{notificacionId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "notificaciones",
+                                                                               "{{notificacionId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "GET - Notificaciones de usuario",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/notificaciones/usuario/{{usuarioId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "notificaciones",
+                                                                               "usuario",
+                                                                               "{{usuarioId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "GET - No leídas",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/notificaciones/usuario/{{usuarioId}}/no-leidas",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "notificaciones",
+                                                                               "usuario",
+                                                                               "{{usuarioId}}",
+                                                                               "no-leidas"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "09 - Recompensas",
+                     "item":  [
+                                  {
+                                      "name":  "GET - Recompensa por ID",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/recompensas/{{recompensaId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "recompensas",
+                                                                               "{{recompensaId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "GET - Recompensas de usuario",
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/recompensas/usuario/{{usuarioId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "recompensas",
+                                                                               "usuario",
+                                                                               "{{usuarioId}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "10 - Evidencias del informe",
+                     "description":  "Solicitudes de las Figuras 4, 8, 10, 11, 14 y 17 que no estaban en las carpetas anteriores.",
+                     "item":  [
+                                  {
+                                      "name":  "Figura 4 - Registro enviando rol ADMIN (queda CLIENTE)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/usuarios/registro",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "usuarios",
+                                                                               "registro"
+                                                                           ]
+                                                              },
+                                                      "auth":  {
+                                                                   "type":  "noauth"
+                                                               },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"email\": \"prueba@correo.cl\",\n  \"password\": \"Clave1234\",\n  \"nombre\": \"Prueba\",\n  \"apellido\": \"Cliente\",\n  \"telefono\": \"+56911112222\",\n  \"direccion\": \"Santiago\",\n  \"rol\": \"ADMIN\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "description":  "Respuesta esperada: 200 con rol CLIENTE y sin password. Si el correo ya existe, responde 400."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Figura 8 - Catalogo publico sin token",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/productos",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "productos"
+                                                                           ]
+                                                              },
+                                                      "auth":  {
+                                                                   "type":  "noauth"
+                                                               },
+                                                      "description":  "Respuesta esperada: 200."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Figura 10 - CLIENTE crea producto",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/productos",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "productos"
+                                                                           ]
+                                                              },
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"nombre\": \"Alimento perro 15 kg\",\n  \"descripcion\": \"Alimento premium\",\n  \"precio\": 24990,\n  \"stock\": 20,\n  \"categoria\": \"Alimentos\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "description":  "Iniciar sesion antes como CLIENTE. Respuesta esperada: 403."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Figura 11 - ADMIN crea producto",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/productos",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "productos"
+                                                                           ]
+                                                              },
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{jwtToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"nombre\": \"Alimento perro 15 kg\",\n  \"descripcion\": \"Alimento premium\",\n  \"precio\": 24990,\n  \"stock\": 20,\n  \"categoria\": \"Alimentos\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "description":  "Iniciar sesion antes como ADMIN. Respuesta esperada: 200."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Figura 14 - Registro con correo ya existente",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/usuarios/registro",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "usuarios",
+                                                                               "registro"
+                                                                           ]
+                                                              },
+                                                      "auth":  {
+                                                                   "type":  "noauth"
+                                                               },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"email\": \"prueba@correo.cl\",\n  \"password\": \"Clave1234\",\n  \"nombre\": \"Prueba\",\n  \"apellido\": \"Cliente\",\n  \"telefono\": \"+56911112222\",\n  \"direccion\": \"Santiago\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "description":  "Respuesta esperada: 400 (correo registrado)."
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Figura 17 - Login con contrasena incorrecta",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/api/auth/login",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "auth",
+                                                                               "login"
+                                                                           ]
+                                                              },
+                                                      "auth":  {
+                                                                   "type":  "noauth"
+                                                               },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"email\": \"{{correoPrueba}}\",\n  \"password\": \"claveIncorrecta1\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "description":  "Respuesta esperada: 401. Enviada 5 veces seguidas bloquea el correo; luego \u002701 - Login JWT\u0027 con la clave correcta da 429 (Figura 20) y, pasados 5 minutos, 200 (Figura 21)."
+                                                  }
+                                  }
+                              ]
+                 }
+             ],
+    "variable":  [
+                     {
+                         "key":  "baseUrl",
+                         "value":  "http://localhost:8080"
+                     },
+                     {
+                         "key":  "correoPrueba",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "clavePrueba",
+                         "secret":  true
+                     },
+                     {
+                         "key":  "jwtToken",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "usuarioId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "propietarioId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "veterinarioId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "mascotaId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "citaId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "expedienteId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "productoId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "ventaId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "notificacionId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "recompensaId",
+                         "value":  "1"
+                     },
+                     {
+                         "key":  "jwtTokenAlterado",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "jwtTokenFijo19",
+                         "value":  ""
+                     }
+                 ]
 }

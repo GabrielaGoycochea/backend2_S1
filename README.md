@@ -108,11 +108,11 @@ Se crean automáticamente al iniciar, si no existen. La contraseña de los tres 
 
 Se recomienda crear una **Collection** llamada "PetSalud" y guardar ahí las pruebas.
 
-**Colección Postman disponible:** `postman/PetSalud_Semana2.postman_collection.json`. Se importa desde Postman mediante **Import** y contiene 29 solicitudes organizadas en 10 carpetas (`00` a `09`), correspondientes a autenticación JWT, controles sin autenticación, usuarios, mascotas, citas, expedientes, productos, ventas, notificaciones y recompensas.
+**Colección Postman disponible:** `postman/PetSalud_Semana2.postman_collection.json`. Se importa desde Postman mediante **Import** y contiene 35 solicitudes organizadas en 11 carpetas (`00` a `10`), correspondientes a autenticación JWT, controles sin autenticación, usuarios, mascotas, citas, expedientes, productos, ventas, notificaciones y recompensas, además de la carpeta `10 - Evidencias del informe` (Figuras 4, 8, 10, 11, 14 y 17).
 
 La colección utiliza variables como `baseUrl`, `correoPrueba`, `clavePrueba`, `jwtToken` e identificadores de recursos. Las credenciales y los tokens no se incluyen en el archivo exportado; deben configurarse localmente. Primero se ejecuta el login para obtener un JWT y luego las solicitudes correspondientes. Algunas consultas requieren datos previamente existentes en MySQL.
 
-Las solicitudes de las Figuras 18 y 19 permiten comprobar manualmente el rechazo de una firma JWT alterada y de un token vencido. Para la Figura 19 se requiere configurar temporalmente una vigencia de 60 segundos y reutilizar el mismo token antes y después de su expiración. No se ha validado una ejecución automática conjunta de las 29 solicitudes, por lo que deben comprobarse individualmente según sus requisitos.
+Las solicitudes de las Figuras 18 y 19 permiten comprobar manualmente el rechazo de una firma JWT alterada y de un token vencido. Para la Figura 19 se requiere configurar temporalmente una vigencia de 60 segundos y reutilizar el mismo token antes y después de su expiración. No se ha validado una ejecución automática conjunta de las 35 solicitudes, por lo que deben comprobarse individualmente según sus requisitos.
 
 ### Uso del token JWT
 
@@ -127,6 +127,19 @@ Las solicitudes protegidas utilizan **Authorization → Bearer Token** con el va
 Para comprobar permisos de otro rol, inicia sesión con las credenciales correspondientes y obtén un nuevo token. La vigencia normal es de 30 minutos.
 
 Las pruebas de las Figuras 18 y 19 utilizan variables adicionales (`jwtTokenAlterado` y `jwtTokenFijo19`), descritas en sus solicitudes.
+
+### Orden recomendado para reproducir las evidencias
+
+Antes de comenzar, iniciar PETSALUD con la base de datos disponible, importar la colección y comprobar `baseUrl` (por defecto `http://localhost:8080`). Configurar localmente `correoPrueba` y `clavePrueba` con cuentas de prueba. Las contraseñas y tokens reales no se distribuyen con la colección. Si se necesitan usuarios de prueba, utilizar el perfil `prueba` documentado en este README.
+
+1. **Figura 4:** registrar un usuario nuevo con el correo indicado en la solicitud. Se espera **200** y rol **CLIENTE**, aunque el cuerpo solicite ADMIN. Si el correo ya existe, elegir otro y actualizarlo también en la Figura 14.
+2. **Figura 14:** repetir el registro utilizando exactamente el mismo correo de la Figura 4. Se espera **400** por correo duplicado.
+3. **Figura 8:** consultar el catálogo de productos sin token. Se espera **200**.
+4. **Figura 10:** configurar credenciales de un CLIENTE, ejecutar `01 - Login JWT` para actualizar `jwtToken` y probar la creación de producto. Se espera **403**.
+5. **Figura 11:** cambiar las credenciales por las de un ADMIN, ejecutar nuevamente `01 - Login JWT` para reemplazar `jwtToken` y crear el producto. Se espera **200**; esta solicitud incorpora datos a la base.
+6. **Figura 17:** configurar `correoPrueba` con una cuenta CLIENTE de pruebas y ejecutar una vez el login con clave incorrecta. Se espera **401**. Cinco intentos fallidos consecutivos pueden activar un bloqueo temporal de cinco minutos, por lo que no deben repetirse salvo para comprobar expresamente ese mecanismo.
+
+Las Figuras 18 y 19 tienen instrucciones adicionales sobre firma alterada y expiración del JWT. Para repetir la Figura 19 desde cero, limpiar la variable `jwtTokenFijo19`, obtener un nuevo JWT con vigencia temporal de 60 segundos y ejecutar la solicitud antes y después del vencimiento. Restaurar posteriormente la vigencia normal de 30 minutos. Las 35 solicitudes no deben considerarse una secuencia automática de ejecucion: requieren roles, datos y condiciones diferentes.
 
 ### Pruebas de seguridad
 
