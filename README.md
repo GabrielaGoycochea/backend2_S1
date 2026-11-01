@@ -101,22 +101,32 @@ Se crean automáticamente al iniciar, si no existen. La contraseña de los tres 
 ### Cómo configurar cada petición
 
 1. Crea una petición nueva (**New → HTTP**) con el método y la URL indicados (De no funcionar localhost:8080, probar 127.0.0.1:8080)
-2. Para autenticarte, primero haz login: `POST http://localhost:8080/api/auth/login` con Body → raw → JSON, por ejemplo `{"email": "admin@petsalud.cl", "password": "Petsalud2026!"}`. La respuesta trae `{"token": "..."}`.
+2. Para autenticarte, primero haz login: `POST http://localhost:8080/api/auth/login` con Body → raw → JSON, por ejemplo `{"email": "{{correoPrueba}}", "password": "{{clavePrueba}}"}`. La respuesta trae `{"token": "..."}`.
 3. En las demás peticiones, pestaña **Authorization**: tipo **Bearer Token** y pega el token (o usa una variable, ver más abajo). Para probar sin credenciales, deja el tipo en **No Auth**.
 4. Para las peticiones POST con datos: pestaña **Body → raw → JSON**.
 5. Presiona **Send** y revisa el código de estado (arriba a la derecha de la respuesta). Guarda una captura de cada prueba para el informe.
 
 Se recomienda crear una **Collection** llamada "PetSalud" y guardar ahí las pruebas.
 
-**Collection lista para importar:** `postman/PetSalud_Semana2.postman_collection.json` (Postman → **Import**). Trae las pruebas 1 a 15 del informe, guarda los tokens e ids como variables de la colección y valida cada código de estado. Ejecuta las carpetas `00` a `04` en orden (con **Run collection** puedes ver todo en verde); la carpeta `05` (token vencido y desbloqueo a los 5 minutos) se ejecuta a mano. La carpeta `04` bloquea a `cliente@petsalud.cl` por 5 minutos: si repites la corrida antes de ese plazo, reinicia la aplicación.
+**Colección Postman disponible:** `postman/PetSalud_Semana2.postman_collection.json`. Se importa desde Postman mediante **Import** y contiene 29 solicitudes organizadas en 10 carpetas (`00` a `09`), correspondientes a autenticación JWT, controles sin autenticación, usuarios, mascotas, citas, expedientes, productos, ventas, notificaciones y recompensas.
 
-Para no copiar el token a mano, en la pestaña **Scripts → Post-response** (o **Tests**) de cada login agrega:
+La colección utiliza variables como `baseUrl`, `correoPrueba`, `clavePrueba`, `jwtToken` e identificadores de recursos. Las credenciales y los tokens no se incluyen en el archivo exportado; deben configurarse localmente. Primero se ejecuta el login para obtener un JWT y luego las solicitudes correspondientes. Algunas consultas requieren datos previamente existentes en MySQL.
 
-```javascript
-pm.environment.set("token", pm.response.json().token);
-```
+Las solicitudes de las Figuras 18 y 19 permiten comprobar manualmente el rechazo de una firma JWT alterada y de un token vencido. Para la Figura 19 se requiere configurar temporalmente una vigencia de 60 segundos y reutilizar el mismo token antes y después de su expiración. No se ha validado una ejecución automática conjunta de las 29 solicitudes, por lo que deben comprobarse individualmente según sus requisitos.
 
-y en las peticiones usa **Bearer Token** con el valor `{{token}}`. Para alternar entre roles, guarda un token por rol (`tokenAdmin`, `tokenVet`, `tokenCliente`). El token dura 30 minutos: si una petición responde 401 sin motivo, vuelve a hacer login.
+### Uso del token JWT
+
+La colección incluye la solicitud `01 - Login JWT`, ubicada en `00 - Autenticación JWT`.
+
+Antes de ejecutarla, configura las variables de colección `correoPrueba` y `clavePrueba` con las credenciales del usuario de prueba correspondiente.
+
+Al realizar un login exitoso, el script de Postman guarda automáticamente el JWT en la variable de colección `jwtToken`.
+
+Las solicitudes protegidas utilizan **Authorization → Bearer Token** con el valor `{{jwtToken}}`.
+
+Para comprobar permisos de otro rol, inicia sesión con las credenciales correspondientes y obtén un nuevo token. La vigencia normal es de 30 minutos.
+
+Las pruebas de las Figuras 18 y 19 utilizan variables adicionales (`jwtTokenAlterado` y `jwtTokenFijo19`), descritas en sus solicitudes.
 
 ### Pruebas de seguridad
 
@@ -211,13 +221,13 @@ La autorización tiene dos capas: las reglas por ruta y rol de `SecurityConfig`,
 
 ## 7. Pruebas automatizadas
 
-Las pruebas unitarias verifican las reglas de autorización de los servicios (`AutorizacionServiceTest` y las `*SecurityTest`) y no necesitan base de datos:
+El proyecto incluye pruebas automatizadas de autorización en servicios, validación JWT, autenticación y autorización HTTP, además del bloqueo de intentos de inicio de sesión. Para ejecutar un subconjunto de las pruebas de seguridad, utiliza:
 
 ```powershell
 .\mvnw.cmd test "-Dtest=*SecurityTest,AutorizacionServiceTest,Jwt*Test,SecurityConfigHttpTest,LoginAttemptServiceTest,AuthLockoutTest"
 ```
 
-`.\mvnw.cmd test` sin filtro también ejecuta `BackendpetsaludApplicationTests`, que levanta la aplicación completa y **requiere MySQL encendido y las variables `${DB_USERNAME}`, `${DB_PASSWORD}` y `${JWT_SECRET}`**.
+Para ejecutar la suite completa, utiliza `.\mvnw.cmd test`. En la revisión local de la versión integrada se aprobaron **55 pruebas, sin fallos, errores ni pruebas omitidas, con resultado BUILD SUCCESS**. Esta ejecución incluye `BackendpetsaludApplicationTests`, por lo que requiere MySQL disponible y las variables de conexión y `JWT_SECRET` correctamente configuradas. En el entorno local de revisión se utilizó MySQL en el puerto 3306.
 
 ## 8. Limitaciones conocidas
 
@@ -225,4 +235,4 @@ Las pruebas unitarias verifican las reglas de autorización de los servicios (`A
 - **Citas:** el veterinario asignado no se valida contra su rol y los estados de una cita no están restringidos a una lista. El veterinario tampoco agenda citas (las agenda el cliente o el ADMIN).
 - **JWT sin revocación ni refresh:** un token es válido hasta que expira (30 minutos); no hay lista de tokens revocados ni token de refresco.
 - **Bloqueo en memoria:** el contador de intentos fallidos no se comparte entre varias instancias ni sobrevive a un reinicio. Además, quien conozca un email puede bloquearlo 5 minutos con intentos fallidos (compromiso habitual de este mecanismo).
-- **Pruebas:** la verificación de rutas y roles completa se hace con Postman; las pruebas automáticas cubren solo las reglas de los servicios.
+- **Pruebas:** el proyecto cuenta con 55 pruebas automatizadas aprobadas que incluyen validación de JWT, autenticación, autorización por roles, controles de los servicios y bloqueo de intentos de inicio de sesión. Las verificaciones manuales con Postman complementan esta cobertura, pero no se ha comprobado exhaustivamente el funcionamiento de todos los endpoints y escenarios posibles.
