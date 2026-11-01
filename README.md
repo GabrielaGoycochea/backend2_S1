@@ -77,14 +77,7 @@ Para detenerla, presiona `Ctrl + C` en la terminal.
 
 ### Si la aplicación no arranca
 
-Aunque Maven termine con `BUILD SUCCESS`, la aplicación puede no haber iniciado. Revisa la consola:
-
-- `Could not resolve placeholder 'JWT_SECRET' in value "${JWT_SECRET}"` (o `DB_USERNAME` / `DB_PASSWORD`): la variable no está definida en el lugar desde donde ejecutas.
-  - En PowerShell, las variables definidas con `$env:` solo valen para esa ventana: define las tres y ejecuta `.\mvnw.cmd ...` en la **misma** ventana.
-  - Comprueba que existe con `echo $env:JWT_SECRET`.
-  - Si ejecutas desde un IDE (IntelliJ, VS Code, Eclipse), define las variables en la configuración de ejecución (*Environment variables*) o abre el IDE desde la terminal donde las definiste.
-  - Si las definiste con `setx` o en las variables del sistema, cierra y vuelve a abrir la terminal o el IDE para que las tomen.
-- Errores de conexión a MySQL: revisa que MySQL esté encendido, el puerto (`3307`) y los valores de `${DB_USERNAME}` y `${DB_PASSWORD}`.
+Si aparece un error de conexión a MySQL, verifica que el servidor esté encendido, que el puerto configurado (3307 o 3306, según el equipo) sea correcto y que las credenciales coincidan con las variables definidas en el paso 3.
 
 ## 4. Usuarios de prueba (perfil `prueba`)
 
@@ -162,10 +155,9 @@ Las Figuras 18 y 19 tienen instrucciones adicionales sobre firma alterada y expi
 | 11 | `GET http://localhost:8080/api/ventas/usuario/{id}` con el id de **otro** usuario | `cliente@petsalud.cl` | **403 Forbidden**; con su propio id: **200** |
 | 12 | `GET http://localhost:8080/api/recompensas/{id}` de otro cliente, y `DELETE http://localhost:8080/api/recompensas/{id}` | `cliente@petsalud.cl` | **403 Forbidden** en ambas (eliminar y crear recompensas es solo del ADMIN) |
 | 13 | `GET http://localhost:8080/api/mascotas/{id}` de un cliente | `vet@petsalud.cl` | **200 OK**: el veterinario puede consultar para la atención clínica |
-| 14 | `PUT http://localhost:8080/api/mascotas/{id}` de un cliente | `vet@petsalud.cl` | **403 Forbidden**: el veterinario no modifica mascotas (el dueño y el ADMIN sí) |
-| 15 | `POST http://localhost:8080/api/expedientes?mascotaId={id}&veterinarioId={id de otro usuario}` | `vet@petsalud.cl` | **403 Forbidden**; con su **propio** `veterinarioId`: **200** |
+| 14 | `POST http://localhost:8080/api/expedientes?mascotaId={id}&veterinarioId={id de otro usuario}` | `vet@petsalud.cl` | **403 Forbidden**; con su **propio** `veterinarioId`: **200** |
 
-> Para las pruebas 10 a 15 se necesitan datos: registra una mascota con `POST /api/mascotas/propietario/{idDelCliente}` y usa el id que devuelve. Para ver ids de usuarios, consulta `GET /api/usuarios` como `admin@petsalud.cl`.
+> Para las pruebas 10 a 14 se necesitan datos: registra una mascota con `POST /api/mascotas/propietario/{idDelCliente}` y usa el id que devuelve. Para ver ids de usuarios, consulta `GET /api/usuarios` como `admin@petsalud.cl`.
 
 Body de la prueba 7:
 
