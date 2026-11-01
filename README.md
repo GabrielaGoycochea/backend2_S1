@@ -46,7 +46,14 @@ Los valores `${...}` no se escriben en el archivo: Spring los lee de las variabl
 
 - El proyecto está configurado con el puerto `3307`. Cámbialo (por ejemplo a `3306`) si tu MySQL usa otro.
 - Las variables `${DB_USERNAME}`, `${DB_PASSWORD}` y `${JWT_SECRET}` deben existir como variables de entorno **antes de ejecutar la aplicación y en la misma terminal (o configuración de ejecución del IDE) desde donde se ejecuta**. Sin `${JWT_SECRET}` la aplicación no arranca.
-- `JWT_SECRET` es la clave de firma de los tokens: debe estar en **Base64** y tener al menos 32 bytes. Ejemplo para definir las tres variables en PowerShell (solo para la ventana actual):
+- La duración del token se define en `jwt.expiration-ms` (por defecto 30 minutos) y el emisor en `jwt.issuer`.
+- El bloqueo del login se configura con `login.max-attempts` (5 intentos) y `login.lock-minutes` (5 minutos).
+- `createDatabaseIfNotExist=true` crea la base `petsalud_db` si no existe. Las tablas las crea Hibernate al iniciar.
+
+## 3. Cómo ejecutar
+
+1. Abre la terminal (powershell o vscode) en la carpeta del proyecto (la que contiene `mvnw.cmd`).
+2. Configura primero las variables de entorno en esta misma terminal. Reemplaza `tu_clave_mysql` por tu contraseña local; se generará una clave JWT aleatoria de 32 bytes en Base64:
 
 ```powershell
 $env:DB_USERNAME="root"
@@ -56,14 +63,7 @@ $b = New-Object byte[] 32
 $env:JWT_SECRET=[Convert]::ToBase64String($b)
 ```
 
-- La duración del token se define en `jwt.expiration-ms` (por defecto 30 minutos) y el emisor en `jwt.issuer`.
-- El bloqueo del login se configura con `login.max-attempts` (5 intentos) y `login.lock-minutes` (5 minutos).
-- `createDatabaseIfNotExist=true` crea la base `petsalud_db` si no existe. Las tablas las crea Hibernate al iniciar.
-
-## 3. Cómo ejecutar
-
-1. Abre la terminal (powershell o vscode) en la carpeta del proyecto (la que contiene `mvnw.cmd`).
-2. Ejecuta con el perfil `prueba`, que crea los usuarios de prueba:
+3. Ejecuta con el perfil `prueba`, que crea los usuarios de prueba:
 
 ```powershell
 .\mvnw.cmd clean spring-boot:run "-Dspring-boot.run.profiles=prueba"
