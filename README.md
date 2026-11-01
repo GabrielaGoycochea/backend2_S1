@@ -132,7 +132,7 @@ Antes de comenzar, iniciar PETSALUD con la base de datos disponible, importar la
 5. **Figura 11:** cambiar las credenciales por las de un ADMIN, ejecutar nuevamente `01 - Login JWT` para reemplazar `jwtToken` y crear el producto. Se espera **200**; esta solicitud incorpora datos a la base.
 6. **Figura 17:** configurar `correoPrueba` con una cuenta CLIENTE de pruebas y ejecutar una vez el login con clave incorrecta. Se espera **401**. Cinco intentos fallidos consecutivos pueden activar un bloqueo temporal de cinco minutos, por lo que no deben repetirse salvo para comprobar expresamente ese mecanismo.
 
-Las Figuras 18 y 19 tienen instrucciones adicionales sobre firma alterada y expiración del JWT. Para repetir la Figura 19 desde cero, limpiar la variable `jwtTokenFijo19`, obtener un nuevo JWT con vigencia temporal de 60 segundos y ejecutar la solicitud antes y después del vencimiento. Restaurar posteriormente la vigencia normal de 30 minutos. Las 35 solicitudes no deben considerarse una secuencia automática de ejecucion: requieren roles, datos y condiciones diferentes.
+Las Figuras 18 y 19 tienen instrucciones adicionales sobre firma alterada y expiración del JWT. Para repetir la Figura 19 desde cero, limpiar la variable `jwtTokenFijo19`, obtener un nuevo JWT con vigencia temporal de 60 segundos y ejecutar la solicitud antes y después del vencimiento. Restaurar posteriormente la vigencia normal de 30 minutos. Las 35 solicitudes no deben considerarse una secuencia automática de ejecución: requieren roles, datos y condiciones diferentes.
 
 ### Pruebas de seguridad
 
@@ -143,9 +143,9 @@ Las Figuras 18 y 19 tienen instrucciones adicionales sobre firma alterada y expi
 | 3 | `GET http://localhost:8080/api/usuarios` | `admin@petsalud.cl` | **200 OK**, lista de usuarios **sin** el campo `password` |
 | 4 | `POST http://localhost:8080/api/auth/login` con la contraseña de `admin@petsalud.cl` incorrecta | Ninguna | **401** ("Credenciales invalidas") y en la consola de Spring aparece `LOGIN FALLIDO` |
 | 4a | `POST http://localhost:8080/api/auth/login` con clave incorrecta, **5 veces seguidas** (usa `cliente@petsalud.cl`) | Ninguna | Intentos 1 a 5: **401**. En el 5.º aparece `CUENTA BLOQUEADA` en la consola |
+| 4b | `GET http://localhost:8080/api/usuarios` | Bearer Token del admin con un carácter alterado | **401** (firma inválida) |
 | 4c | El mismo login (ahora **con la clave correcta**) inmediatamente después | Ninguna | **429 Too Many Requests**, con encabezado `Retry-After` y el mensaje de cuenta bloqueada |
 | 4d | El mismo login con la clave correcta pasados **5 minutos** | Ninguna | **200 OK** con token (bloqueo terminado) |
-| 4b | `GET http://localhost:8080/api/usuarios` | Bearer Token del admin con un carácter alterado | **401** (firma inválida) |
 | 5 | `GET http://localhost:8080/api/productos` | Ninguna | **200 OK** (el catálogo es público) |
 | 6 | `POST http://localhost:8080/api/productos` | `cliente@petsalud.cl` | **403 Forbidden** |
 | 7 | `POST http://localhost:8080/api/productos` | `admin@petsalud.cl` | **200 OK**, producto creado |
