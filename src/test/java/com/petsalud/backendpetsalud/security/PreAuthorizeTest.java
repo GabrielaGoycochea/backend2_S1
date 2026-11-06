@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * antes de llegar al servicio.
  */
 @WebMvcTest(controllers = {NotificacionController.class, RecompensaController.class, ExpedienteMedicoController.class})
-@Import({SecurityConfig.class, JwtRequestFilter.class})
+@Import({SecurityConfig.class, JwtRequestFilter.class, ActividadSospechosaService.class})
 class PreAuthorizeTest {
 
     private static final String NOTIFICACION = "{\"mensaje\":\"Campana de vacunacion\",\"tipo\":\"Promocion\"}";

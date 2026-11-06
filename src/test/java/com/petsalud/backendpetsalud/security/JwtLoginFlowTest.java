@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = {AuthController.class, ProductoController.class})
-@Import({SecurityConfig.class, JwtRequestFilter.class, JwtUtil.class, LoginAttemptService.class})
+@Import({SecurityConfig.class, JwtRequestFilter.class, ActividadSospechosaService.class, JwtUtil.class, LoginAttemptService.class})
 @TestPropertySource(properties = {"jwt.secret=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", "jwt.expiration-ms=1800000", "jwt.issuer=PetSalud"})
 class JwtLoginFlowTest {
     @Autowired private MockMvc mvc;

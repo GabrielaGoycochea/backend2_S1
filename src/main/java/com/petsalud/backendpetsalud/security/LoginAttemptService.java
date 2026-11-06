@@ -58,6 +58,17 @@ public class LoginAttemptService {
         return segundosRestantes(email) > 0;
     }
 
+    /** Fallos seguidos registrados para el email (para el log de seguridad). */
+    public int fallosRegistrados(String email) {
+        Estado e = intentos.get(clave(email));
+        return e == null ? 0 : e.fallos();
+    }
+
+    /** Duracion del bloqueo en minutos (para el log de seguridad). */
+    public long minutosBloqueo() {
+        return duracionBloqueo.toMinutes();
+    }
+
     /** Registra un fallo de login. Devuelve true si este fallo provoco el bloqueo. */
     public boolean registrarFallo(String email) {
         Instant ahora = clock.instant();
