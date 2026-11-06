@@ -1,12 +1,15 @@
 package com.petsalud.backendpetsalud.controller;
 
-import com.petsalud.backendpetsalud.security.ReglasAcceso;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.petsalud.backendpetsalud.dto.RecompensaRequest;
 import com.petsalud.backendpetsalud.entity.Recompensa;
+import com.petsalud.backendpetsalud.security.ReglasAcceso;
 import com.petsalud.backendpetsalud.service.RecompensaService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -18,8 +21,9 @@ public class RecompensaController {
 
     @PreAuthorize(ReglasAcceso.GERENTE)
     @PostMapping("/usuario/{usuarioId}")
-    public ResponseEntity<Recompensa> agregarRecompensa(@PathVariable Long usuarioId, @RequestBody Recompensa recompensa) {
-        Recompensa nuevaRecompensa = recompensaService.agregarRecompensa(usuarioId, recompensa);
+    public ResponseEntity<Recompensa> agregarRecompensa(@PathVariable Long usuarioId,
+                                                        @Valid @RequestBody RecompensaRequest datos) {
+        Recompensa nuevaRecompensa = recompensaService.agregarRecompensa(usuarioId, datos.aEntidad());
         return ResponseEntity.ok(nuevaRecompensa);
     }
 

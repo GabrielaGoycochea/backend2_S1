@@ -1,12 +1,15 @@
 package com.petsalud.backendpetsalud.controller;
 
-import com.petsalud.backendpetsalud.security.ReglasAcceso;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.petsalud.backendpetsalud.dto.NotificacionRequest;
 import com.petsalud.backendpetsalud.entity.Notificacion;
+import com.petsalud.backendpetsalud.security.ReglasAcceso;
 import com.petsalud.backendpetsalud.service.NotificacionService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -18,8 +21,9 @@ public class NotificacionController {
 
     @PreAuthorize(ReglasAcceso.GERENTE)
     @PostMapping("/usuario/{usuarioId}")
-    public ResponseEntity<Notificacion> enviarNotificacion(@PathVariable Long usuarioId, @RequestBody Notificacion notificacion) {
-        Notificacion nuevaNotificacion = notificacionService.enviarNotificacion(usuarioId, notificacion);
+    public ResponseEntity<Notificacion> enviarNotificacion(@PathVariable Long usuarioId,
+                                                           @Valid @RequestBody NotificacionRequest datos) {
+        Notificacion nuevaNotificacion = notificacionService.enviarNotificacion(usuarioId, datos.aEntidad());
         return ResponseEntity.ok(nuevaNotificacion);
     }
 

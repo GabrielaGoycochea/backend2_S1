@@ -1,12 +1,18 @@
 package com.petsalud.backendpetsalud.controller;
 
-import com.petsalud.backendpetsalud.security.ReglasAcceso;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.petsalud.backendpetsalud.dto.ProductoRequest;
+import com.petsalud.backendpetsalud.dto.Validaciones;
 import com.petsalud.backendpetsalud.entity.Producto;
+import com.petsalud.backendpetsalud.security.ReglasAcceso;
 import com.petsalud.backendpetsalud.service.ProductoService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -18,8 +24,8 @@ public class ProductoController {
 
     @PreAuthorize(ReglasAcceso.GERENTE)
     @PostMapping
-    public ResponseEntity<Producto> agregarProducto(@RequestBody Producto producto) {
-        Producto nuevoProducto = productoService.agregarProducto(producto);
+    public ResponseEntity<Producto> agregarProducto(@Valid @RequestBody ProductoRequest datos) {
+        Producto nuevoProducto = productoService.agregarProducto(datos.aEntidad());
         return ResponseEntity.ok(nuevoProducto);
     }
 
@@ -33,8 +39,8 @@ public class ProductoController {
 
     @PreAuthorize(ReglasAcceso.GERENTE)
     @PutMapping("/{id}")
-    public ResponseEntity<Producto> actualizarProducto(@PathVariable Long id, @RequestBody Producto producto) {
-        Producto productoActualizado = productoService.actualizarProducto(id, producto);
+    public ResponseEntity<Producto> actualizarProducto(@PathVariable Long id, @Valid @RequestBody ProductoRequest datos) {
+        Producto productoActualizado = productoService.actualizarProducto(id, datos.aEntidad());
         return ResponseEntity.ok(productoActualizado);
     }
 
@@ -54,7 +60,8 @@ public class ProductoController {
 
     @PreAuthorize(ReglasAcceso.PUBLICO)
     @GetMapping("/categoria")
-    public ResponseEntity<List<Producto>> listarProductosPorCategoria(@RequestParam String categoria) {
+    public ResponseEntity<List<Producto>> listarProductosPorCategoria(
+            @RequestParam @Size(max = 50) @Pattern(regexp = Validaciones.NOMBRE, message = Validaciones.MSG_NOMBRE) String categoria) {
         List<Producto> productos = productoService.listarProductosPorCategoria(categoria);
         return ResponseEntity.ok(productos);
     }

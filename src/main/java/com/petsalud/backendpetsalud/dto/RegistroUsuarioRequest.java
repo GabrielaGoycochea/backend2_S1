@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Size;
 /**
  * Datos que un cliente puede enviar al registrarse.
  * NO incluye "rol" ni "id": asi nadie puede auto-asignarse ADMIN (mass assignment).
+ * Semana 3: nombre y apellido ya no aceptan apostrofes ni comillas, y la direccion no acepta < ni >.
  */
 public record RegistroUsuarioRequest(
         @NotBlank @Email @Size(max = 120)
@@ -19,16 +20,16 @@ public record RegistroUsuarioRequest(
         @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).+$", message = "debe contener letras y numeros")
         String password,
 
-        @NotBlank @Size(max = 60) @Pattern(regexp = "^[\\p{L} .'-]+$", message = "contiene caracteres no permitidos")
+        @NotBlank @Size(max = 60) @Pattern(regexp = Validaciones.NOMBRE_PERSONA, message = Validaciones.MSG_NOMBRE_PERSONA)
         String nombre,
 
-        @Size(max = 60) @Pattern(regexp = "^[\\p{L} .'-]*$", message = "contiene caracteres no permitidos")
+        @Size(max = 60) @Pattern(regexp = Validaciones.NOMBRE_PERSONA, message = Validaciones.MSG_NOMBRE_PERSONA)
         String apellido,
 
-        @Size(max = 20) @Pattern(regexp = "^[+0-9 ]*$", message = "solo numeros, espacios y +")
+        @Size(max = 20) @Pattern(regexp = Validaciones.TELEFONO, message = Validaciones.MSG_TELEFONO)
         String telefono,
 
-        @Size(max = 150)
+        @Size(max = 150) @Pattern(regexp = Validaciones.TEXTO_SEGURO, message = Validaciones.MSG_TEXTO_SEGURO)
         String direccion
 ) {
 }

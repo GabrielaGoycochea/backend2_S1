@@ -1,13 +1,14 @@
 package com.petsalud.backendpetsalud.controller;
 
-import com.petsalud.backendpetsalud.security.ReglasAcceso;
-import org.springframework.security.access.prepost.PreAuthorize;
-import com.petsalud.backendpetsalud.entity.Usuario;
+import com.petsalud.backendpetsalud.dto.ActualizarUsuarioRequest;
 import com.petsalud.backendpetsalud.dto.RegistroUsuarioRequest;
-import jakarta.validation.Valid;
+import com.petsalud.backendpetsalud.entity.Usuario;
+import com.petsalud.backendpetsalud.security.ReglasAcceso;
 import com.petsalud.backendpetsalud.service.UsuarioService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -47,8 +48,8 @@ public class UsuarioController {
 
     @PreAuthorize(ReglasAcceso.GERENTE)
     @PutMapping("/{id}")
-    public ResponseEntity<Usuario> actualizarUsuario(@PathVariable Long id, @RequestBody Usuario usuario) {
-        Usuario usuarioActualizado = usuarioService.actualizarUsuario(id, usuario);
+    public ResponseEntity<Usuario> actualizarUsuario(@PathVariable Long id, @Valid @RequestBody ActualizarUsuarioRequest datos) {
+        Usuario usuarioActualizado = usuarioService.actualizarUsuario(id, datos.aEntidad());
         return ResponseEntity.ok(usuarioActualizado);
     }
 

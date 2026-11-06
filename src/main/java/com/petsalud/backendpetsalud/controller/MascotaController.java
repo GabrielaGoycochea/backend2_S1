@@ -1,12 +1,15 @@
 package com.petsalud.backendpetsalud.controller;
 
-import com.petsalud.backendpetsalud.security.ReglasAcceso;
-import org.springframework.security.access.prepost.PreAuthorize;
+import com.petsalud.backendpetsalud.dto.MascotaRequest;
 import com.petsalud.backendpetsalud.entity.Mascota;
+import com.petsalud.backendpetsalud.security.ReglasAcceso;
 import com.petsalud.backendpetsalud.service.MascotaService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -18,8 +21,9 @@ public class MascotaController {
 
     @PreAuthorize(ReglasAcceso.AUTENTICADO)
     @PostMapping("/propietario/{propietarioId}")
-    public ResponseEntity<Mascota> registrarMascota(@PathVariable Long propietarioId, @RequestBody Mascota mascota) {
-        Mascota nuevaMascota = mascotaService.registrarMascota(mascota, propietarioId);
+    public ResponseEntity<Mascota> registrarMascota(@PathVariable Long propietarioId,
+                                                    @Valid @RequestBody MascotaRequest datos) {
+        Mascota nuevaMascota = mascotaService.registrarMascota(datos.aEntidad(), propietarioId);
         return ResponseEntity.ok(nuevaMascota);
     }
 
@@ -33,8 +37,8 @@ public class MascotaController {
 
     @PreAuthorize(ReglasAcceso.AUTENTICADO)
     @PutMapping("/{id}")
-    public ResponseEntity<Mascota> actualizarMascota(@PathVariable Long id, @RequestBody Mascota mascota) {
-        Mascota mascotaActualizada = mascotaService.actualizarMascota(id, mascota);
+    public ResponseEntity<Mascota> actualizarMascota(@PathVariable Long id, @Valid @RequestBody MascotaRequest datos) {
+        Mascota mascotaActualizada = mascotaService.actualizarMascota(id, datos.aEntidad());
         return ResponseEntity.ok(mascotaActualizada);
     }
 

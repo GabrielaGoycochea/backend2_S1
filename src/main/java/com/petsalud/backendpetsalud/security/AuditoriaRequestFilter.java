@@ -47,7 +47,7 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
         }
     }
 
-    static String usuarioActual() {
+    public static String usuarioActual() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || auth instanceof AnonymousAuthenticationToken || !auth.isAuthenticated()) {
             return "anonimo";
