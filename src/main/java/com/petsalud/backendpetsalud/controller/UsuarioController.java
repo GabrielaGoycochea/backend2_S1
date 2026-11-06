@@ -1,5 +1,7 @@
 package com.petsalud.backendpetsalud.controller;
 
+import com.petsalud.backendpetsalud.security.ReglasAcceso;
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.petsalud.backendpetsalud.entity.Usuario;
 import com.petsalud.backendpetsalud.dto.RegistroUsuarioRequest;
 import jakarta.validation.Valid;
@@ -17,6 +19,7 @@ public class UsuarioController {
     @Autowired
     private UsuarioService usuarioService;
 
+    @PreAuthorize(ReglasAcceso.PUBLICO)
     @PostMapping("/registro")
     public ResponseEntity<Usuario> registrarUsuario(
             @Valid @RequestBody RegistroUsuarioRequest datos) {
@@ -34,6 +37,7 @@ public class UsuarioController {
         return ResponseEntity.ok(nuevoUsuario);
     }
 
+    @PreAuthorize(ReglasAcceso.GERENTE)
     @GetMapping("/{id}")
     public ResponseEntity<Usuario> obtenerUsuarioPorId(@PathVariable Long id) {
         return usuarioService.obtenerUsuarioPorId(id)
@@ -41,18 +45,21 @@ public class UsuarioController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PreAuthorize(ReglasAcceso.GERENTE)
     @PutMapping("/{id}")
     public ResponseEntity<Usuario> actualizarUsuario(@PathVariable Long id, @RequestBody Usuario usuario) {
         Usuario usuarioActualizado = usuarioService.actualizarUsuario(id, usuario);
         return ResponseEntity.ok(usuarioActualizado);
     }
 
+    @PreAuthorize(ReglasAcceso.GERENTE)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarUsuario(@PathVariable Long id) {
         usuarioService.eliminarUsuario(id);
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize(ReglasAcceso.GERENTE)
     @GetMapping
     public ResponseEntity<List<Usuario>> listarUsuarios() {
         List<Usuario> usuarios = usuarioService.listarUsuarios();

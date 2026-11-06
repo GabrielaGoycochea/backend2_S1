@@ -1,5 +1,7 @@
 package com.petsalud.backendpetsalud.controller;
 
+import com.petsalud.backendpetsalud.security.ReglasAcceso;
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.petsalud.backendpetsalud.entity.Cita;
 import com.petsalud.backendpetsalud.service.CitaService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,7 @@ public class CitaController {
     @Autowired
     private CitaService citaService;
 
+    @PreAuthorize(ReglasAcceso.AUTENTICADO)
     @PostMapping
     public ResponseEntity<Cita> agendarCita(
             @RequestParam Long mascotaId,
@@ -26,6 +29,7 @@ public class CitaController {
         return ResponseEntity.ok(nuevaCita);
     }
 
+    @PreAuthorize(ReglasAcceso.AUTENTICADO)
     @GetMapping("/{id}")
     public ResponseEntity<Cita> obtenerCitaPorId(@PathVariable Long id) {
         return citaService.obtenerCitaPorId(id)
@@ -33,30 +37,35 @@ public class CitaController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PreAuthorize(ReglasAcceso.PERSONAL)
     @PutMapping("/{id}/estado")
     public ResponseEntity<Cita> actualizarEstadoCita(@PathVariable Long id, @RequestParam String estado) {
         Cita citaActualizada = citaService.actualizarEstadoCita(id, estado);
         return ResponseEntity.ok(citaActualizada);
     }
 
+    @PreAuthorize(ReglasAcceso.AUTENTICADO)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelarCita(@PathVariable Long id) {
         citaService.cancelarCita(id);
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize(ReglasAcceso.AUTENTICADO)
     @GetMapping("/mascota/{mascotaId}")
     public ResponseEntity<List<Cita>> listarCitasPorMascota(@PathVariable Long mascotaId) {
         List<Cita> citas = citaService.listarCitasPorMascota(mascotaId);
         return ResponseEntity.ok(citas);
     }
 
+    @PreAuthorize(ReglasAcceso.PERSONAL)
     @GetMapping("/veterinario/{veterinarioId}")
     public ResponseEntity<List<Cita>> listarCitasPorVeterinario(@PathVariable Long veterinarioId) {
         List<Cita> citas = citaService.listarCitasPorVeterinario(veterinarioId);
         return ResponseEntity.ok(citas);
     }
 
+    @PreAuthorize(ReglasAcceso.GERENTE)
     @GetMapping("/entre-fechas")
     public ResponseEntity<List<Cita>> listarCitasEntreFechas(
             @RequestParam String inicio,

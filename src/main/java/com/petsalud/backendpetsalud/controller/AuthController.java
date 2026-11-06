@@ -1,5 +1,7 @@
 package com.petsalud.backendpetsalud.controller;
 
+import com.petsalud.backendpetsalud.security.ReglasAcceso;
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.petsalud.backendpetsalud.dto.AuthRequest;
 import com.petsalud.backendpetsalud.dto.AuthResponse;
 import com.petsalud.backendpetsalud.security.JwtUtil;
@@ -40,6 +42,7 @@ public class AuthController {
 
     // Autenticacion: valida email y contrasena y, si son correctos, devuelve un JWT.
     // Tras 5 intentos fallidos el email se bloquea 5 minutos (429 Too Many Requests).
+    @PreAuthorize(ReglasAcceso.PUBLICO)
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request) {
         if (request == null || request.email() == null || request.email().isBlank()
