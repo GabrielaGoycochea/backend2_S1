@@ -1,0 +1,24 @@
+Suite completa: mvn test con MariaDB disponible (incluye contextLoads)
+
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0  BackendpetsaludApplicationTests
+Tests run: 7, Failures: 0, Errors: 0, Skipped: 0  repository.InyeccionSqlRepositorioTest
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0  security.ActividadSospechosaServiceTest
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0  security.AmenazasComunesTest$CrossSiteScripting
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0  security.AmenazasComunesTest$Csrf
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0  security.AmenazasComunesTest$InyeccionSql
+Tests run: 0, Failures: 0, Errors: 0, Skipped: 0  security.AmenazasComunesTest
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0  security.AuthLockoutTest
+Tests run: 10, Failures: 0, Errors: 0, Skipped: 0  security.AutorizacionServiceTest
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0  security.JwtLoginFlowTest
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0  security.JwtRequestFilterTest
+Tests run: 10, Failures: 0, Errors: 0, Skipped: 0  security.JwtUtilTest
+Tests run: 8, Failures: 0, Errors: 0, Skipped: 0  security.LoginAttemptServiceTest
+Tests run: 6, Failures: 0, Errors: 0, Skipped: 0  security.MonitoreoSeguridadTest
+Tests run: 8, Failures: 0, Errors: 0, Skipped: 0  security.PreAuthorizeTest
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0  security.SecurityConfigHttpTest
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0  service.CitaServiceImplSecurityTest
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0  service.ExpedienteMedicoServiceImplSecurityTest
+Tests run: 6, Failures: 0, Errors: 0, Skipped: 0  service.MascotaServiceImplSecurityTest
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0  service.RecompensaServiceImplSecurityTest
+
+Total: 95 pruebas, 0 fallas, 0 errores, 0 omitidas. BUILD SUCCESS

@@ -1,0 +1,63 @@
+Pruebas manuales contra la API real (perfil prueba, MariaDB 10.11 en el puerto 3307)
+Ejecutadas el 2026-11-06 con curl; script: docs/semana3/evidencias/evidencias.sh
+
+== Usuarios del perfil prueba: cliente=3 vet=2 admin=1
+== Mascota Luna creada por el cliente: id=1
+
+== 1. SQL Injection
+Login con ' OR '1'='1' --                                  esperado=401 obtenido=401 OK
+    cuerpo: Credenciales invalidas
+Registro con inyeccion en el email                         esperado=400 obtenido=400 OK
+    cuerpo: {"campos":["email"],"status":400,"error":"Bad Request","message":"Los datos enviados no cumplen las validaciones"}
+Busqueda por categoria con inyeccion                       esperado=400 obtenido=400 OK
+    cuerpo: {"campos":["categoria"],"status":400,"error":"Bad Request","message":"Los parametros enviados no cumplen las validaciones"}
+Id de ruta /api/mascotas/1 OR 1=1                          esperado=400 obtenido=400 OK
+    cuerpo: {"campos":["id"],"status":400,"error":"Bad Request","message":"Parametro con formato invalido"}
+
+== 2. XSS
+Script en el nombre de la mascota (CLIENTE)                esperado=400 obtenido=400 OK
+    cuerpo: {"campos":["nombre"],"status":400,"error":"Bad Request","message":"Los datos enviados no cumplen las validaciones"}
+HTML en el diagnostico (VETERINARIO)                       esperado=400 obtenido=400 OK
+    cuerpo: {"campos":["diagnostico"],"status":400,"error":"Bad Request","message":"Los datos enviados no cumplen las validaciones"}
+Script en el motivo de la cita (CLIENTE)                   esperado=400 obtenido=400 OK
+    cuerpo: {"campos":["motivo"],"status":400,"error":"Bad Request","message":"Los parametros enviados no cumplen las validaciones"}
+Datos validos: expediente de Luna (VETERINARIO)            esperado=200 obtenido=200 OK
+    cuerpo: {"id":1,"fecha":"2026-11-06T12:02:01.882138609","descripcion":"Control anual","diagnostico":"Paciente sano","tratamiento":"Vacuna antirrabica anual","mascota":{
+    cabeceras de GET /api/productos:
+      X-Content-Type-Options: nosniff
+      Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+      X-Frame-Options: DENY
+      Content-Security-Policy: default-src 'none'; frame-ancestors 'none'
+      Referrer-Policy: no-referrer
+
+== 3. Asignacion masiva (otro cliente intenta sobrescribir a Luna enviando su id)
+POST con "id":1 en el cuerpo                               esperado=200 obtenido=200 OK
+    cuerpo: {"id":2,"nombre":"Robada","especie":"Gato","raza":null,"fechaNacimiento":null,"sexo":null,"propietario":{"id":4,"email":"otro.cliente@petsalud.cl","nombre":"Otr
+    Luna sigue intacta: Luna propietario cliente@petsalud.cl
+El otro cliente consulta a Luna (ajena)                    esperado=403 obtenido=403 OK
+    cuerpo: {"timestamp":"2026-11-06T15:02:02.317+00:00","status":403,"error":"Forbidden","path":"/api/mascotas/1"}
+
+== 4. CSRF
+POST con cookie de sesion y sin Bearer                     esperado=401 obtenido=401 OK
+    Set-Cookie en el login: 0 (0 = no crea sesion)
+Preflight desde https://sitio-malicioso.example            esperado=403 obtenido=403 OK
+    cuerpo: Invalid CORS request
+Preflight desde http://localhost:3000 (front autorizado)   esperado=200 obtenido=200 OK
+
+== 5. Roles con @PreAuthorize
+CLIENTE envia notificacion                                 esperado=403 obtenido=403 OK
+    cuerpo: {"timestamp":"2026-11-06T15:02:02.519+00:00","status":403,"error":"Forbidden","path":"/api/notificaciones/usuario/3"}
+ADMIN envia notificacion                                   esperado=200 obtenido=200 OK
+    cuerpo: {"id":1,"mensaje":"Campana de vacunacion","tipo":"Promocion","fecha":"2026-11-06T12:02:02.556380191","leida":false,"usuario":{"id":3,"email":"cliente@petsalud.c
+VETERINARIO elimina expediente 1                           esperado=403 obtenido=403 OK
+    cuerpo: {"timestamp":"2026-11-06T15:02:02.640+00:00","status":403,"error":"Forbidden","path":"/api/expedientes/1"}
+CLIENTE consulta expediente 1                              esperado=403 obtenido=403 OK
+    cuerpo: {"timestamp":"2026-11-06T15:02:02.669+00:00","status":403,"error":"Forbidden","path":"/api/expedientes/1"}
+ADMIN elimina expediente 1                                 esperado=204 obtenido=204 OK
+
+== 6. JWT y monitoreo
+JWT con la firma alterada                                  esperado=401 obtenido=401 OK
+Sin token a un recurso protegido                           esperado=401 obtenido=401 OK
+Sexto intento tras 5 fallos (clave correcta)               esperado=429 obtenido=429 OK
+    cuerpo: Cuenta bloqueada temporalmente por demasiados intentos fallidos. Intente nuevamente en 5 minuto(s).
+    200 solicitudes seguidas a /api/productos enviadas (umbral de rafaga: 200 en 15 min)
