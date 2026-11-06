@@ -249,7 +249,7 @@ En un entorno real, el archivo `logs/petsalud.log` lo revisaría un sistema de d
 
 ### 4.2 Pruebas manuales contra la API
 
-API levantada con el perfil `prueba` y base de datos real. Resultado completo en `evidencias/pruebas-manuales.txt`; la colección `postman/PetSalud_Semana3_Amenazas.postman_collection.json` permite repetirlas en Postman.
+API levantada con el perfil `prueba` y base de datos real. Resultado completo en `evidencias/pruebas-manuales.txt`. La colección `postman/PetSalud_Semana3_Amenazas.postman_collection.json` repite estas pruebas en Postman: ejecutada completa con el Collection Runner (newman), sus 19 solicitudes y 22 verificaciones pasaron (`evidencias/postman-newman.txt`).
 
 | Prueba | Esperado | Obtenido |
 | --- | --- | --- |

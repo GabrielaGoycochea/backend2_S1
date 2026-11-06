@@ -82,7 +82,7 @@
                 "login"
               ]
             },
-            "description": "Usuario del perfil prueba. Guarda el JWT en la variable tokenVet.",
+            "description": "Usuario del perfil prueba. Guarda el JWT en tokenVet y una copia alterada en tokenAlterado.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"vet@petsalud.cl\",\n  \"password\": \"{{clavePrueba}}\"\n}",
@@ -100,7 +100,10 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
-                  "pm.collectionVariables.set(\"tokenVet\", pm.response.json().token);"
+                  "var token = pm.response.json().token;",
+                  "pm.collectionVariables.set(\"tokenVet\", token);",
+                  "// Copia del token con el ultimo caracter cambiado: firma invalida (carpeta 05)",
+                  "pm.collectionVariables.set(\"tokenAlterado\", token.slice(0, -1) + (token.slice(-1) === \"x\" ? \"y\" : \"x\"));"
                 ]
               }
             }
@@ -923,7 +926,7 @@
                 }
               ]
             },
-            "description": "Copiar tokenVet en tokenAlterado y cambiar un carácter. En el log: JWT_INVALIDO y SIN_AUTENTICACION (el token no se escribe)."
+            "description": "tokenAlterado es el token del veterinario con el último carácter cambiado (lo crea Login VETERINARIO). En el log: JWT_INVALIDO motivo=SignatureException y SIN_AUTENTICACION; el token no se escribe."
           },
           "event": [
             {
