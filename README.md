@@ -13,7 +13,7 @@ API REST con Spring Boot 3, Spring Security con autenticación JWT (stateless), 
 | 5. Amenazas | DTO validados (sin `<`, `>`, comillas ni asignación masiva) y pruebas de SQL Injection, XSS y CSRF | `dto/`, `AmenazasComunesTest`, `InyeccionSqlRepositorioTest`, colección Postman de la Semana 3 |
 | 6. GitHub | Este README, el informe y las evidencias | `docs/semana3/` |
 
-Resultado: **95 pruebas automáticas sin fallos** (40 nuevas) y 23 pruebas manuales contra la API con base de datos real (`docs/semana3/evidencias/`).
+Resultado: **97 pruebas automáticas sin fallos** (42 nuevas) y 23 pruebas manuales contra la API con base de datos real (`docs/semana3/evidencias/`).
 
 ## 1. Requisitos
 
@@ -42,7 +42,7 @@ spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
 
 jwt.secret=${JWT_SECRET}
-jwt.expiration-ms=1800000
+jwt.expiration-ms=900000
 jwt.issuer=PetSalud
 
 login.max-attempts=5
@@ -258,7 +258,7 @@ El proyecto incluye pruebas automatizadas de autorización en servicios, validac
 .\mvnw.cmd test "-Dtest=*SecurityTest,AutorizacionServiceTest,Jwt*Test,SecurityConfigHttpTest,LoginAttemptServiceTest,AuthLockoutTest"
 ```
 
-Para ejecutar la suite completa, utiliza `.\mvnw.cmd test`. Con la Semana 3 la suite tiene **95 pruebas, sin fallos, errores ni pruebas omitidas, con resultado BUILD SUCCESS** (en la Semana 2 eran 55).
+Para ejecutar la suite completa, utiliza `.\mvnw.cmd test`. Con la Semana 3 la suite tiene **97 pruebas, sin fallos, errores ni pruebas omitidas, con resultado BUILD SUCCESS** (en la Semana 2 eran 55).
 
 Pruebas nuevas de la Semana 3:
 
@@ -268,6 +268,7 @@ Pruebas nuevas de la Semana 3:
 | `AmenazasComunesTest` | SQL Injection (login, registro, búsqueda e id), XSS (mascota, diagnóstico y motivo de cita), cabeceras de seguridad y CSRF (cookie sin Bearer, login sin sesión y CORS) |
 | `InyeccionSqlRepositorioTest` | Cargas de inyección contra una base H2 real y que ningún repositorio use SQL nativo |
 | `MonitoreoSeguridadTest` y `ActividadSospechosaServiceTest` | Los eventos de seguridad quedan registrados con IP y sin contraseñas ni tokens |
+| `AuthLockoutTest` y `JwtUtilTest` (1 nueva cada una) | Cinco fallos desde una IP no bloquean al mismo usuario desde otra IP, y el JWT dura 15 minutos |
 
 Solo las pruebas de la Semana 3 (no necesitan MySQL):
 
@@ -309,10 +310,13 @@ WARN CUENTA_BLOQUEADA usuario=otro.cliente@petsalud.cl ip=127.0.0.1 minutos=5 mo
 
 ## 10. Pruebas de amenazas en Postman (Semana 3)
 
-Importa `postman/PetSalud_Semana3_Amenazas.postman_collection.json`. Configura la variable `clavePrueba` con la clave del perfil `prueba` y ejecuta primero la carpeta `00 - Preparación`, que guarda `tokenCliente`, `tokenVet` y `tokenAdmin`. Cada solicitud trae una prueba con el código esperado, así que la colección se puede correr completa con el **Collection Runner**.
+Importa `postman/PetSalud_Semana3_Amenazas.postman_collection.json` (si ya estaba importada, elige **Replace**). Configura la variable `clavePrueba` con la clave del perfil `prueba` y ejecuta la colección completa con el **Collection Runner** (clic derecho > **Run collection**). La carpeta `00 - Preparación` deja todo listo sin ingresar valores a mano: inicia sesión con los tres roles (`tokenCliente`, `tokenVet` y `tokenAdmin`), obtiene los IDs de los usuarios y busca la mascota `MascotaPrueba` y su expediente de prueba; si no existen, los crea en la base. Cada solicitud trae una prueba con el código esperado.
+
+En la primera ejecución se crean la mascota y el expediente (24 solicitudes, 35 pruebas). En las siguientes, las dos solicitudes de creación se omiten y no se duplican datos (31 pruebas).
 
 | Carpeta | Solicitudes | Resultado esperado |
 |---|---|---|
+| 00 - Preparación | Logins por rol, IDs de usuarios, mascota y expediente de prueba (se crean solo si no existen) | 200 |
 | 01 - SQL Injection | Login, registro, búsqueda por categoría e id de ruta con inyección | 401 en el login y 400 en el resto |
 | 02 - XSS | Script o HTML en mascota, diagnóstico y motivo de cita; cabeceras de la respuesta | 400 y cabeceras `Content-Security-Policy`, `nosniff` y `DENY` |
 | 03 - CSRF | Cookie sin Bearer, login sin `Set-Cookie` y preflight CORS desde otro sitio | 401, sin cookie y 403 |

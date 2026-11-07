@@ -84,7 +84,7 @@ El navegador nunca agrega ese header por su cuenta y otro sitio no puede leer el
 
 | Código | Requerimiento | Cómo se cumple |
 | --- | --- | --- |
-| RS-01 | Autenticar con email y contraseña, guardando las contraseñas con BCrypt y entregando un JWT firmado (HS256) de 30 minutos, con emisor y audiencia | `AuthController`, `UsuarioServiceImpl`, `JwtUtil` |
+| RS-01 | Autenticar con email y contraseña, guardando las contraseñas con BCrypt y entregando un JWT firmado (HS256) de 15 minutos, con emisor y audiencia | `AuthController`, `UsuarioServiceImpl`, `JwtUtil` |
 | RS-02 | Atender cada solicitud sin sesión: los recursos protegidos exigen `Authorization: Bearer` | `SecurityConfig` (STATELESS), `JwtRequestFilter` |
 | RS-03 | Declarar la regla de acceso de cada endpoint por ruta y por método | `SecurityConfig`, `@PreAuthorize` con `ReglasAcceso` |
 | RS-04 | Un cliente solo puede ver y modificar sus propios datos, aunque cambie los ids de la solicitud | `AutorizacionService` en los servicios |
@@ -92,7 +92,7 @@ El navegador nunca agrega ese header por su cuenta y otro sitio no puede leer el
 | RS-06 | Acceder a la base solo con consultas parametrizadas, sin SQL concatenado ni nativo | Repositorios Spring Data JPA |
 | RS-07 | No exponer contraseñas, tokens ni detalles internos en respuestas, errores o registros | `@JsonProperty(WRITE_ONLY)`, `server.error.include-*=never`, `JWT_SECRET` por variable de entorno |
 | RS-08 | Rechazar con 401 (sin identidad) o 403 (sin permiso) sin revelar información privada | `SecurityConfig` |
-| RS-09 | Limitar la fuerza bruta: bloqueo de 5 minutos tras 5 fallos y detección de ráfagas por IP | `LoginAttemptService`, `ActividadSospechosaService` |
+| RS-09 | Limitar la fuerza bruta: bloqueo de 5 minutos tras 5 fallos con el mismo correo desde la misma IP, y detección de ráfagas por IP | `LoginAttemptService`, `ActividadSospechosaService` |
 | RS-10 | Registrar intentos fallidos, accesos rechazados, entradas rechazadas y operaciones de escritura con fecha, hora, IP, usuario y operación, en un archivo | `ActividadSospechosaService`, `AuditoriaRequestFilter`, `logging.file.name` |
 | RS-11 | Enviar cabeceras contra XSS y permitir llamadas de navegador solo desde los front autorizados | `SecurityConfig` (CSP y CORS) |
 
@@ -146,7 +146,7 @@ Matriz de roles, acciones y endpoints ("propias" significa que el servicio compr
 
 1. El usuario envía email y contraseña a `POST /api/auth/login`.
 2. Spring Security busca la cuenta con `UsuarioDetailsService` y compara la contraseña con el hash BCrypt guardado (se compara el hash, nunca se descifra).
-3. Si es correcta, `JwtUtil` emite un JWT firmado con HS256 que incluye emisor (`PetSalud`), audiencia (`petsalud-api`), usuario, rol, fecha de emisión y vencimiento (30 minutos).
+3. Si es correcta, `JwtUtil` emite un JWT firmado con HS256 que incluye emisor (`PetSalud`), audiencia (`petsalud-api`), usuario, rol, fecha de emisión y vencimiento (15 minutos).
 4. En cada solicitud, `JwtRequestFilter` verifica la firma, el vencimiento, el emisor y la audiencia, carga el usuario desde la base (así un cambio de rol se aplica de inmediato) y deja la identidad en el `SecurityContext`.
 5. Las reglas por ruta, `@PreAuthorize` y `AutorizacionService` deciden si la operación se permite.
 
@@ -176,7 +176,7 @@ Medidas del backend relacionadas:
 > Los pasos 1 a 6 vienen de la Semana 2 y se resumen. Los pasos 7 a 11 son de esta semana.
 
 1. **Dependencias** (`pom.xml`): `spring-boot-starter-security`, `spring-boot-starter-web`, `spring-boot-starter-validation`, `jjwt-api`, `jjwt-impl` y `jjwt-jackson` 0.12.6. Para las pruebas: `spring-security-test` y `h2` (solo pruebas de repositorio).
-2. **Propiedades** (`application.properties`): conexión a MySQL con `DB_USERNAME` y `DB_PASSWORD`, `jwt.secret=${JWT_SECRET}` (Base64, mínimo 32 bytes), `jwt.expiration-ms=1800000`, `jwt.issuer=PetSalud`, `jwt.audience=petsalud-api`, `login.max-attempts=5`, `login.lock-minutes=5`, `server.error.include-stacktrace=never` y `server.error.include-message=never`.
+2. **Propiedades** (`application.properties`): conexión a MySQL con `DB_USERNAME` y `DB_PASSWORD`, `jwt.secret=${JWT_SECRET}` (Base64, mínimo 32 bytes), `jwt.expiration-ms=900000` (15 minutos), `jwt.issuer=PetSalud`, `jwt.audience=petsalud-api`, `login.max-attempts=5`, `login.lock-minutes=5`, `server.error.include-stacktrace=never` y `server.error.include-message=never`.
 3. **Usuarios desde la base:** `UsuarioDetailsService` implementa `UserDetailsService` y busca por email; `UsuarioDetails` entrega el rol como autoridad.
 4. **Contraseñas:** bean `BCryptPasswordEncoder`. `UsuarioServiceImpl` cifra la clave al registrar y fija el rol en `CLIENTE` (nadie se registra como ADMIN).
 5. **JWT:** `JwtUtil` genera y valida el token (firma HS256, emisor, audiencia y vencimiento). `AuthController` expone `POST /api/auth/login`.
@@ -209,7 +209,7 @@ Medidas del backend relacionadas:
 | SQL Injection | Validación de entrada y consultas parametrizadas de JPA, sin SQL nativo | `Validaciones`, repositorios | `AmenazasComunesTest.InyeccionSql` (4 casos) e `InyeccionSqlRepositorioTest` (7 casos contra H2) |
 | XSS almacenado | Texto libre sin `<` ni `>`, más cabeceras CSP, `nosniff` y `X-Frame-Options` | DTO, `SecurityConfig` | `AmenazasComunesTest.CrossSiteScripting` (5 casos) |
 | CSRF | Credencial solo en el header Authorization, sin cookies ni sesión, y CORS restringido | `SecurityConfig` | `AmenazasComunesTest.Csrf` (4 casos) |
-| Fuerza bruta | Bloqueo de 5 minutos tras 5 fallos y alerta de ráfaga por IP | `LoginAttemptService`, `ActividadSospechosaService` | `AuthLockoutTest`, `LoginAttemptServiceTest`, `ActividadSospechosaServiceTest` |
+| Fuerza bruta | Bloqueo de 5 minutos tras 5 fallos con el mismo correo e IP, y alerta de ráfaga por IP | `LoginAttemptService`, `ActividadSospechosaService` | `AuthLockoutTest`, `LoginAttemptServiceTest`, `ActividadSospechosaServiceTest` |
 | Actividad sin trazabilidad | Registro de eventos con fecha, hora, IP, usuario y operación, sin credenciales y a prueba de saltos de línea | `ActividadSospechosaService`, `AuditoriaRequestFilter` | `MonitoreoSeguridadTest`, `ActividadSospechosaServiceTest` |
 | Fuga de información en errores | Respuestas uniformes, sin stack trace ni mensajes internos | `GlobalExceptionHandler`, propiedades `server.error.*` | Respuestas 400 de `AmenazasComunesTest` |
 
@@ -219,8 +219,8 @@ Medidas del backend relacionadas:
 | --- | --- |
 | `LOGIN_OK` | Login correcto |
 | `LOGIN_FALLIDO` | Credenciales incorrectas; incluye cuántos fallos seguidos lleva el usuario |
-| `CUENTA_BLOQUEADA` | Quinto fallo seguido (posible fuerza bruta) |
-| `LOGIN_RECHAZADO_BLOQUEO` | Intento de login mientras la cuenta está bloqueada |
+| `CUENTA_BLOQUEADA` | Quinto fallo seguido con el mismo correo desde la misma IP (posible fuerza bruta) |
+| `LOGIN_RECHAZADO_BLOQUEO` | Intento de login mientras ese correo está bloqueado para esa IP |
 | `JWT_INVALIDO` | Token alterado, vencido, de otro emisor o audiencia, o de un usuario inexistente |
 | `SIN_AUTENTICACION` | Recurso protegido sin token válido (401) |
 | `ACCESO_DENEGADO` | Usuario sin permiso por rol o por propiedad (403) |
@@ -236,7 +236,7 @@ En un entorno real, el archivo `logs/petsalud.log` lo revisaría un sistema de d
 
 ### 4.1 Pruebas automáticas
 
-`mvn test` con MySQL disponible: **95 pruebas, 0 fallas, 0 errores**, `BUILD SUCCESS` (detalle en `evidencias/pruebas-automaticas.txt`). Respecto de la Semana 2 se agregaron 40 pruebas:
+`mvn test` con MySQL disponible: **97 pruebas, 0 fallas, 0 errores**, `BUILD SUCCESS`. Respecto de la Semana 2 se agregaron 42 pruebas. El archivo `evidencias/pruebas-automaticas.txt` corresponde a la ejecución del 6 de noviembre (95 pruebas), anterior a las dos pruebas del bloqueo por IP y de la vigencia de 15 minutos.
 
 | Clase | Pruebas | Qué demuestra |
 | --- | --- | --- |
@@ -246,10 +246,12 @@ En un entorno real, el archivo `logs/petsalud.log` lo revisaría un sistema de d
 | `MonitoreoSeguridadTest` | 6 | Cada evento queda en el log con IP, sin contraseñas ni tokens |
 | `ActividadSospechosaServiceTest` | 4 | Detección de ráfagas, ventana de tiempo y protección contra falsificación de líneas del log |
 | `JwtUtilTest` y `JwtRequestFilterTest` | 2 nuevas | Audiencia del token y registro de tokens inválidos |
+| `AuthLockoutTest` | 1 nueva | Cinco fallos desde una IP bloquean esa combinación, pero el mismo usuario entra desde otra IP |
+| `JwtUtilTest` | 1 nueva | El token generado dura exactamente 15 minutos |
 
 ### 4.2 Pruebas manuales contra la API
 
-API levantada con el perfil `prueba` y base de datos real. Resultado completo en `evidencias/pruebas-manuales.txt`. La colección `postman/PetSalud_Semana3_Amenazas.postman_collection.json` repite estas pruebas en Postman: ejecutada completa con el Collection Runner (newman), sus 19 solicitudes y 22 verificaciones pasaron (`evidencias/postman-newman.txt`).
+API levantada con el perfil `prueba` y base de datos real. Resultado completo en `evidencias/pruebas-manuales.txt`. La colección `postman/PetSalud_Semana3_Amenazas.postman_collection.json` repite estas pruebas en Postman: la versión actual tiene 24 solicitudes y prepara sola los tokens, los IDs, la mascota y el expediente de prueba. Ejecutada completa con el Collection Runner, pasaron 35 verificaciones en la primera corrida y 31 en la segunda, en la que se omiten las dos solicitudes de creación. El archivo `evidencias/postman-newman.txt` corresponde a la versión anterior de la colección (19 solicitudes y 22 verificaciones).
 
 | Prueba | Esperado | Obtenido |
 | --- | --- | --- |
@@ -305,8 +307,8 @@ El backend cumple los requerimientos de autenticación stateless con JWT, autori
 Quedan como mejoras, fuera del alcance de esta entrega:
 
 - **HTTPS obligatorio** con HSTS en el despliegue: las credenciales solo deben viajar cifradas.
-- **Revocación y renovación de tokens:** hoy un JWT sigue válido hasta vencer. Un token de refresco y una vigencia de 15 a 20 minutos reducirían el riesgo si se roba.
-- **Bloqueo y monitoreo compartidos:** hoy viven en memoria. Con varias instancias convendría Redis o una base de datos, y enviar el log a un SIEM.
+- **Revocación y renovación de tokens:** hoy un JWT sigue válido hasta vencer. La vigencia ya se redujo a 15 minutos; un token de refresco permitiría renovarla sin volver a iniciar sesión, y una lista de revocación permitiría invalidar un token robado.
+- **Bloqueo y monitoreo compartidos:** hoy viven en memoria. Con varias instancias convendría Redis o una base de datos, y enviar el log a un SIEM. Como el bloqueo es por correo e IP, un ataque repartido entre muchas IP no bloquea la cuenta: convendría una alerta cuando un mismo correo acumula fallos desde varias IP.
 - **Sanitización con jsoup** si algún campo debiera aceptar HTML con formato.
 - **DTO de salida** para entregar solo los campos necesarios en cada respuesta.
 - **LDAPS o IDaaS** para el personal si la clínica incorpora un directorio corporativo o necesita SSO y MFA.

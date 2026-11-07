@@ -1028,7 +1028,7 @@
               }
             ],
             "url": "{{baseUrl}}/api/notificaciones/usuario/{{clienteId}}",
-            "description": "usuarioId debe existir (por ejemplo, el id de cliente@petsalud.cl). Log: OPERACION usuario=admin@petsalud.cl.",
+            "description": "Envía la notificación a cliente@petsalud.cl (clienteId, que obtiene la carpeta 00). Log: OPERACION usuario=admin@petsalud.cl.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"mensaje\": \"Campaña de vacunación\",\n  \"tipo\": \"Promoción\"\n}",
@@ -1129,10 +1129,6 @@
     {
       "key": "tokenAlterado",
       "value": ""
-    },
-    {
-      "key": "usuarioId",
-      "value": "3"
     },
     {
       "key": "expedienteId",
