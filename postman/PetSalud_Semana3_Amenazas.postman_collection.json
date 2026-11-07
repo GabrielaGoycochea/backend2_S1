@@ -52,7 +52,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
-                  "pm.collectionVariables.set(\"tokenCliente\", pm.response.json().token);"
+                  "pm.test(\"JWT recibido\", function () { pm.expect(pm.response.json().token).to.be.a(\"string\").and.not.empty; }); pm.collectionVariables.set(\"tokenCliente\", pm.response.json().token);"
                 ]
               }
             }
@@ -101,9 +101,9 @@
                 "exec": [
                   "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
                   "var token = pm.response.json().token;",
-                  "pm.collectionVariables.set(\"tokenVet\", token);",
+                  "pm.test(\"JWT recibido\", function () { pm.expect(token).to.be.a(\"string\").and.not.empty; }); pm.collectionVariables.set(\"tokenVet\", token);",
                   "// Copia del token con el ultimo caracter cambiado: firma invalida (carpeta 05)",
-                  "pm.collectionVariables.set(\"tokenAlterado\", token.slice(0, -1) + (token.slice(-1) === \"x\" ? \"y\" : \"x\"));"
+                  "pm.collectionVariables.set(\"tokenAlterado\", token.split(\".\").slice(0, 2).join(\".\") + \".\" + (token.split(\".\")[2].charAt(0) === \"A\" ? \"B\" : \"A\") + token.split(\".\")[2].slice(1));"
                 ]
               }
             }
@@ -151,9 +151,250 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
-                  "pm.collectionVariables.set(\"tokenAdmin\", pm.response.json().token);"
+                  "pm.test(\"JWT recibido\", function () { pm.expect(pm.response.json().token).to.be.a(\"string\").and.not.empty; }); pm.collectionVariables.set(\"tokenAdmin\", pm.response.json().token);"
                 ]
               }
+            }
+          ]
+        },
+        {
+          "request": {
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "raw": "{{baseUrl}}/api/usuarios",
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            },
+            "header": [],
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": "{{tokenAdmin}}"
+                }
+              ],
+              "type": "bearer"
+            }
+          },
+          "name": "Obtener IDs de usuarios",
+          "event": [
+            {
+              "script": {
+                "exec": [
+                  "pm.test(\"Responde 200\", function () { pm.response.to.have.status(200); });",
+                  "const usuarios = pm.response.json();",
+                  "[[\"cliente@petsalud.cl\",\"clienteId\"],[\"vet@petsalud.cl\",\"veterinarioId\"],[\"admin@petsalud.cl\",\"adminId\"]].forEach(([correo, variable]) => {",
+                  "  const usuario = usuarios.find(u => u.email === correo);",
+                  "  pm.test(\"Existe \" + correo, function () { pm.expect(usuario).to.exist; });",
+                  "  if (usuario) pm.collectionVariables.set(variable, usuario.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              },
+              "listen": "test"
+            }
+          ]
+        },
+        {
+          "request": {
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "raw": "{{baseUrl}}/api/mascotas/propietario/{{clienteId}}",
+              "path": [
+                "api",
+                "mascotas",
+                "propietario",
+                "{{clienteId}}"
+              ]
+            },
+            "header": [],
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": "{{tokenCliente}}"
+                }
+              ],
+              "type": "bearer"
+            }
+          },
+          "name": "Buscar mascota de prueba",
+          "event": [
+            {
+              "script": {
+                "exec": [
+                  "pm.test(\"Consulta autorizada\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) {",
+                  "  const mascotas = pm.response.json();",
+                  "  const mascota = mascotas.find(m => m.nombre === \"MascotaPrueba\");",
+                  "  pm.collectionVariables.set(\"mascotaId\", mascota ? mascota.id : \"\");",
+                  "  console.log(mascota ? \"Mascota existente encontrada\" : \"Mascota pendiente de crear\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              },
+              "listen": "test"
+            }
+          ]
+        },
+        {
+          "request": {
+            "url": {
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "raw": "{{baseUrl}}/api/mascotas/propietario/{{clienteId}}",
+              "path": [
+                "api",
+                "mascotas",
+                "propietario",
+                "{{clienteId}}"
+              ]
+            },
+            "method": "POST",
+            "body": {
+              "raw": "{\"nombre\":\"MascotaPrueba\",\"especie\":\"Perro\",\"raza\":\"Mestizo\",\"fechaNacimiento\":\"2022-05-10\",\"sexo\":\"Macho\"}",
+              "mode": "raw"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "type": "text",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": "{{tokenCliente}}"
+                }
+              ],
+              "type": "bearer"
+            }
+          },
+          "name": "Crear mascota si no existe",
+          "event": [
+            {
+              "script": {
+                "exec": [
+                  "if (pm.collectionVariables.get(\"mascotaId\")) { pm.execution.skipRequest(); }"
+                ],
+                "type": "text/javascript"
+              },
+              "listen": "prerequest"
+            },
+            {
+              "script": {
+                "exec": [
+                  "pm.test(\"Mascota creada\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) {",
+                  "  const mascota = pm.response.json();",
+                  "  pm.test(\"ID de mascota recibido\", function () { pm.expect(mascota.id).to.exist; });",
+                  "  pm.collectionVariables.set(\"mascotaId\", mascota.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              },
+              "listen": "test"
+            }
+          ]
+        },
+        {
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/expedientes/mascota/{{mascotaId}}",
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": "{{tokenVet}}"
+                }
+              ],
+              "type": "bearer"
+            }
+          },
+          "name": "Buscar expediente de prueba",
+          "event": [
+            {
+              "script": {
+                "exec": [
+                  "pm.test(\"Consulta de expedientes correcta\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) {",
+                  "  const expedientes = pm.response.json();",
+                  "  const expediente = expedientes.find(e => e.descripcion === \"Registro de prueba Postman Semana 3\");",
+                  "  pm.collectionVariables.set(\"expedienteId\", expediente ? expediente.id : \"\");",
+                  "  console.log(expediente ? \"Expediente existente encontrado\" : \"Expediente pendiente de crear\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              },
+              "listen": "test"
+            }
+          ]
+        },
+        {
+          "request": {
+            "url": "{{baseUrl}}/api/expedientes?mascotaId={{mascotaId}}&veterinarioId={{veterinarioId}}",
+            "method": "POST",
+            "body": {
+              "raw": "{\"descripcion\":\"Registro de prueba Postman Semana 3\",\"diagnostico\":\"Control preventivo\",\"tratamiento\":\"Observacion\"}",
+              "mode": "raw"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "type": "text",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": "{{tokenVet}}"
+                }
+              ],
+              "type": "bearer"
+            }
+          },
+          "name": "Crear expediente si no existe",
+          "event": [
+            {
+              "script": {
+                "exec": [
+                  "if (pm.collectionVariables.get(\"expedienteId\")) { pm.execution.skipRequest(); }"
+                ],
+                "type": "text/javascript"
+              },
+              "listen": "prerequest"
+            },
+            {
+              "script": {
+                "exec": [
+                  "pm.test(\"Expediente creado\", function () { pm.response.to.have.status(200); });",
+                  "if (pm.response.code === 200) {",
+                  "  const expediente = pm.response.json();",
+                  "  pm.test(\"ID de expediente recibido\", function () { pm.expect(expediente.id).to.exist; });",
+                  "  if (expediente.id) pm.collectionVariables.set(\"expedienteId\", expediente.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              },
+              "listen": "test"
             }
           ]
         }
@@ -360,18 +601,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{baseUrl}}/api/mascotas/propietario/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "mascotas",
-                "propietario",
-                "1"
-              ]
-            },
+            "url": "{{baseUrl}}/api/mascotas/propietario/{{clienteId}}",
             "description": "El DTO no acepta < ni >. En el log queda ENTRADA_RECHAZADA campos=nombre (sin el script).",
             "body": {
               "mode": "raw",
@@ -415,26 +645,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{baseUrl}}/api/expedientes?mascotaId=1&veterinarioId=2",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "expedientes"
-              ],
-              "query": [
-                {
-                  "key": "mascotaId",
-                  "value": "1"
-                },
-                {
-                  "key": "veterinarioId",
-                  "value": "2"
-                }
-              ]
-            },
+            "url": "{{baseUrl}}/api/expedientes?mascotaId={{mascotaId}}&veterinarioId={{veterinarioId}}",
             "description": "",
             "body": {
               "mode": "raw",
@@ -473,34 +684,7 @@
             },
             "method": "POST",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/citas?mascotaId=1&veterinarioId=2&fechaHora=2026-12-01T10:00:00&motivo=<script>alert(1)</script>",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "citas"
-              ],
-              "query": [
-                {
-                  "key": "mascotaId",
-                  "value": "1"
-                },
-                {
-                  "key": "veterinarioId",
-                  "value": "2"
-                },
-                {
-                  "key": "fechaHora",
-                  "value": "2026-12-01T10:00:00"
-                },
-                {
-                  "key": "motivo",
-                  "value": "<script>alert(1)</script>"
-                }
-              ]
-            },
+            "url": "{{baseUrl}}/api/citas?mascotaId={{mascotaId}}&veterinarioId={{veterinarioId}}&fechaHora=2026-12-01T10:00:00&motivo=<script>alert(1)</script>",
             "description": ""
           },
           "event": [
@@ -759,18 +943,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{baseUrl}}/api/notificaciones/usuario/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "notificaciones",
-                "usuario",
-                "1"
-              ]
-            },
+            "url": "{{baseUrl}}/api/notificaciones/usuario/{{adminId}}",
             "description": "La regla por URL solo exige autenticación: lo bloquea @PreAuthorize(GERENTE). Log: ACCESO_DENEGADO.",
             "body": {
               "mode": "raw",
@@ -854,18 +1027,7 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{baseUrl}}/api/notificaciones/usuario/{{usuarioId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "notificaciones",
-                "usuario",
-                "{{usuarioId}}"
-              ]
-            },
+            "url": "{{baseUrl}}/api/notificaciones/usuario/{{clienteId}}",
             "description": "usuarioId debe existir (por ejemplo, el id de cliente@petsalud.cl). Log: OPERACION usuario=admin@petsalud.cl.",
             "body": {
               "mode": "raw",
@@ -975,6 +1137,22 @@
     {
       "key": "expedienteId",
       "value": "1"
+    },
+    {
+      "key": "clienteId",
+      "value": ""
+    },
+    {
+      "key": "veterinarioId",
+      "value": ""
+    },
+    {
+      "key": "adminId",
+      "value": ""
+    },
+    {
+      "key": "mascotaId",
+      "value": ""
     }
   ]
 }
