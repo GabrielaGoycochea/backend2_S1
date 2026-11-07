@@ -66,7 +66,7 @@ Los valores `${...}` no se escriben en el archivo: Spring los lee de las variabl
 
 - El proyecto está configurado con el puerto `3307`. Cámbialo (por ejemplo a `3306`) si tu MySQL usa otro.
 - Las variables `${DB_USERNAME}`, `${DB_PASSWORD}` y `${JWT_SECRET}` deben existir como variables de entorno **antes de ejecutar la aplicación y en la misma terminal (o configuración de ejecución del IDE) desde donde se ejecuta**. Sin `${JWT_SECRET}` la aplicación no arranca.
-- La duración del token se define en `jwt.expiration-ms` (por defecto 30 minutos) y el emisor en `jwt.issuer`.
+- La duración del token se define en `jwt.expiration-ms` (por defecto 15 minutos) y el emisor en `jwt.issuer`.
 - El bloqueo del login se configura con `login.max-attempts` (5 intentos) y `login.lock-minutes` (5 minutos).
 - `createDatabaseIfNotExist=true` crea la base `petsalud_db` si no existe. Las tablas las crea Hibernate al iniciar.
 
@@ -137,7 +137,7 @@ Al realizar un login exitoso, el script de Postman guarda automáticamente el JW
 
 Las solicitudes protegidas utilizan **Authorization → Bearer Token** con el valor `{{jwtToken}}`.
 
-Para comprobar permisos de otro rol, inicia sesión con las credenciales correspondientes y obtén un nuevo token. La vigencia normal es de 30 minutos.
+Para comprobar permisos de otro rol, inicia sesión con las credenciales correspondientes y obtén un nuevo token. La vigencia normal es de 15 minutos.
 
 Las pruebas de las Figuras 18 y 19 utilizan variables adicionales (`jwtTokenAlterado` y `jwtTokenFijo19`), descritas en sus solicitudes.
 
@@ -152,7 +152,7 @@ Antes de comenzar, iniciar PETSALUD con la base de datos disponible, importar la
 5. **Figura 11:** cambiar las credenciales por las de un ADMIN, ejecutar nuevamente `01 - Login JWT` para reemplazar `jwtToken` y crear el producto. Se espera **200**; esta solicitud incorpora datos a la base.
 6. **Figura 17:** configurar `correoPrueba` con una cuenta CLIENTE de pruebas y ejecutar una vez el login con clave incorrecta. Se espera **401**. Cinco intentos fallidos consecutivos pueden activar un bloqueo temporal de cinco minutos, por lo que no deben repetirse salvo para comprobar expresamente ese mecanismo.
 
-Las Figuras 18 y 19 tienen instrucciones adicionales sobre firma alterada y expiración del JWT. Para repetir la Figura 19 desde cero, limpiar la variable `jwtTokenFijo19`, obtener un nuevo JWT con vigencia temporal de 60 segundos y ejecutar la solicitud antes y después del vencimiento. Restaurar posteriormente la vigencia normal de 30 minutos. Las 35 solicitudes no deben considerarse una secuencia automática de ejecución: requieren roles, datos y condiciones diferentes.
+Las Figuras 18 y 19 tienen instrucciones adicionales sobre firma alterada y expiración del JWT. Para repetir la Figura 19 desde cero, limpiar la variable `jwtTokenFijo19`, obtener un nuevo JWT con vigencia temporal de 60 segundos y ejecutar la solicitud antes y después del vencimiento. Restaurar posteriormente la vigencia normal de 15 minutos. Las 35 solicitudes no deben considerarse una secuencia automática de ejecución: requieren roles, datos y condiciones diferentes.
 
 ### Pruebas de seguridad
 
@@ -193,12 +193,12 @@ Body de la prueba 7:
 
 ### Bloqueo por intentos fallidos (lockout)
 
-Tras **5 intentos de login fallidos** con un mismo email, ese email queda bloqueado **5 minutos**:
+Tras **5 intentos de login fallidos** con el mismo correo y desde la misma IP, esa combinación queda bloqueada **5 minutos**:
 
 - Intentos 1 a 5 con clave incorrecta: **401 Unauthorized**.
 - Desde el 6.º intento, durante el bloqueo, el login responde **429 Too Many Requests** (con `Retry-After` en segundos), aunque la clave sea correcta. Los intentos durante el bloqueo no lo extienden.
-- Pasados los 5 minutos, el email puede volver a iniciar sesión. Un login correcto antes del 5.º fallo reinicia el contador, y los fallos más antiguos que 5 minutos no se acumulan.
-- El bloqueo es por email (sin distinguir mayúsculas) y se guarda en memoria: se reinicia si se reinicia la aplicación.
+- Pasados los 5 minutos, la combinación de correo e IP queda desbloqueada. Un login correcto antes del 5.º fallo reinicia el contador, y los fallos más antiguos que 5 minutos no se acumulan.
+- El bloqueo es por correo + IP (sin distinguir mayúsculas en el correo) y se guarda en memoria: se reinicia si se reinicia la aplicación.
 - Para una demostración rápida, arranca con 1 minuto de bloqueo: `.\mvnw.cmd clean spring-boot:run "-Dspring-boot.run.profiles=prueba" "-Dspring-boot.run.arguments=--login.lock-minutes=1"`.
 - Usa `cliente@petsalud.cl` para probar, para no bloquear la cuenta del admin que necesitas en las demás pruebas.
 
@@ -280,10 +280,10 @@ Solo las pruebas de la Semana 3 (no necesitan MySQL):
 
 - **CSRF desactivado:** la credencial viaja solo en el header `Authorization`, que el navegador no agrega por su cuenta, y la API no usa cookies ni sesión. Se complementa con CORS restringido a `cors.allowed-origins`. Si algún día el token se guarda en una cookie, hay que reactivar CSRF.
 - **Citas:** el veterinario asignado no se valida contra su rol, y el estado de una cita solo se valida como texto (letras, 3 a 20 caracteres), no contra una lista cerrada. El veterinario tampoco agenda citas (las agenda el cliente o el ADMIN).
-- **JWT sin revocación ni refresh:** un token es válido hasta que expira (30 minutos); no hay lista de tokens revocados ni token de refresco.
-- **Bloqueo en memoria:** el contador de intentos fallidos no se comparte entre varias instancias ni sobrevive a un reinicio. Además, quien conozca un email puede bloquearlo 5 minutos con intentos fallidos (compromiso habitual de este mecanismo).
+- **JWT sin revocación ni refresh:** un token es válido hasta que expira (15 minutos); no hay lista de tokens revocados ni token de refresco.
+- **Bloqueo en memoria:** el contador de intentos fallidos no se comparte entre varias instancias ni sobrevive a un reinicio. La combinación de correo + IP reduce el riesgo de bloqueo provocado desde otra IP, pero un atacante puede distribuir intentos entre distintas IP. Detrás de un proxy, debe configurarse correctamente la identificación de la IP del cliente.
 - **Monitoreo en memoria:** el conteo de solicitudes por IP también vive en memoria. En producción, el archivo `logs/petsalud.log` debería enviarse a un sistema de monitoreo (IDS/IPS o SIEM).
-- **Pruebas:** el proyecto cuenta con 95 pruebas automatizadas aprobadas que incluyen validación de JWT, autenticación, autorización por roles, controles de los servicios y bloqueo de intentos de inicio de sesión. Las verificaciones manuales con Postman complementan esta cobertura, pero no se ha comprobado exhaustivamente el funcionamiento de todos los endpoints y escenarios posibles.
+- **Pruebas:** el proyecto cuenta con 97 pruebas automatizadas aprobadas que incluyen validación de JWT, autenticación, autorización por roles, controles de los servicios y bloqueo de intentos de inicio de sesión. Las verificaciones manuales con Postman complementan esta cobertura, pero no se ha comprobado exhaustivamente el funcionamiento de todos los endpoints y escenarios posibles.
 
 ## 9. Monitoreo de actividad sospechosa (Semana 3)
 
