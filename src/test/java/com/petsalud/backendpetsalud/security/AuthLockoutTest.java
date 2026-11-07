@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = AuthController.class)
 @Import({SecurityConfig.class, JwtRequestFilter.class, ActividadSospechosaService.class, JwtUtil.class, LoginAttemptService.class})
-@TestPropertySource(properties = {"jwt.secret=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", "jwt.expiration-ms=1800000", "jwt.issuer=PetSalud"})
+@TestPropertySource(properties = {"jwt.secret=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", "jwt.expiration-ms=900000", "jwt.issuer=PetSalud"})
 class AuthLockoutTest {
 
     @Autowired private MockMvc mvc;
@@ -64,5 +64,24 @@ class AuthLockoutTest {
             login(email, "incorrecta").andExpect(status().isUnauthorized());
         }
         login(email, "Clave1234").andExpect(status().isOk());
+    }
+
+    @Test
+    void atacanteDesdeOtraIpNoBloqueaAlUsuarioLegitimo() throws Exception {
+        String email = "pruebaip@petsalud.cl";
+        prepararUsuario(email);
+        for (int i = 0; i < 5; i++) {
+            loginDesdeIp(email, "incorrecta", "203.0.113.50").andExpect(status().isUnauthorized());
+        }
+        loginDesdeIp(email, "Clave1234", "203.0.113.50")
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().exists("Retry-After"));
+        loginDesdeIp(email, "Clave1234", "198.51.100.10").andExpect(status().isOk());
+    }
+
+    private org.springframework.test.web.servlet.ResultActions loginDesdeIp(String email, String clave, String ip) throws Exception {
+        return mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                .with(req -> { req.setRemoteAddr(ip); return req; })
+                .content("{\"email\":\"" + email + "\",\"password\":\"" + clave + "\"}"));
     }
 }

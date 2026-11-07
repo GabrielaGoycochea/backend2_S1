@@ -52,8 +52,9 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales invalidas");
         }
         String email = request.email().trim().toLowerCase(Locale.ROOT);
+        String claveIntentos = email + "|" + http.getRemoteAddr();
 
-        long espera = loginAttemptService.segundosRestantes(email);
+        long espera = loginAttemptService.segundosRestantes(claveIntentos);
         if (espera > 0) {
             long minutos = (espera + 59) / 60;
             actividad.loginDuranteBloqueo(http, email);
@@ -66,13 +67,13 @@ public class AuthController {
         try {
             Authentication auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, request.password()));
-            loginAttemptService.registrarExito(email);
+            loginAttemptService.registrarExito(claveIntentos);
             actividad.loginExitoso(http, email);
             String token = jwtUtil.generarToken((UserDetails) auth.getPrincipal());
             return ResponseEntity.ok(new AuthResponse(token));
         } catch (AuthenticationException e) {
-            boolean bloqueada = loginAttemptService.registrarFallo(email);
-            actividad.loginFallido(http, email, loginAttemptService.fallosRegistrados(email));
+            boolean bloqueada = loginAttemptService.registrarFallo(claveIntentos);
+            actividad.loginFallido(http, email, loginAttemptService.fallosRegistrados(claveIntentos));
             if (bloqueada) {
                 actividad.cuentaBloqueada(http, email, loginAttemptService.minutosBloqueo());
             }

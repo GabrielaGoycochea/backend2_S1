@@ -25,7 +25,7 @@ class JwtUtilTest {
         byte[] bytes = new byte[32];
         Arrays.fill(bytes, (byte) 7);
         key = Keys.hmacShaKeyFor(bytes);
-        jwtUtil = new JwtUtil(Base64.getEncoder().encodeToString(bytes), 1800000L, "PetSalud", "petsalud-api");
+        jwtUtil = new JwtUtil(Base64.getEncoder().encodeToString(bytes), 900000L, "PetSalud", "petsalud-api");
         usuario = User.withUsername("cliente@petsalud.cl").password("solo-prueba").authorities("CLIENTE").build();
     }
 
@@ -92,7 +92,15 @@ class JwtUtilTest {
     @Test
     void rechazaClaveJwtDemasiadoCorta() {
         String claveCorta = Base64.getEncoder().encodeToString(new byte[16]);
-        IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> new JwtUtil(claveCorta, 1800000L, "PetSalud", "petsalud-api"));
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> new JwtUtil(claveCorta, 900000L, "PetSalud", "petsalud-api"));
         assertTrue(error.getMessage().contains("32 bytes"));
+    }
+
+    @Test
+    void tokenGeneradoTieneDuracionDe15Minutos() {
+        String token = jwtUtil.generarToken(usuario);
+        var claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+        long duracion = claims.getExpiration().getTime() - claims.getIssuedAt().getTime();
+        assertEquals(900000L, duracion);
     }
 }

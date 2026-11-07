@@ -53,7 +53,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = {AuthController.class, UsuarioController.class, MascotaController.class,
         ExpedienteMedicoController.class, CitaController.class, ProductoController.class})
 @Import({SecurityConfig.class, JwtRequestFilter.class, ActividadSospechosaService.class, JwtUtil.class, LoginAttemptService.class})
-@TestPropertySource(properties = {"jwt.secret=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", "jwt.expiration-ms=1800000",
+@TestPropertySource(properties = {"jwt.secret=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", "jwt.expiration-ms=900000",
         "jwt.issuer=PetSalud", "cors.allowed-origins=http://localhost:3000"})
 class AmenazasComunesTest {
 
