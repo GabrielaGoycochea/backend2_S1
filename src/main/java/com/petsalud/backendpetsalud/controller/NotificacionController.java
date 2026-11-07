@@ -5,6 +5,7 @@ import com.petsalud.backendpetsalud.service.NotificacionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 
 @RestController
@@ -14,6 +15,7 @@ public class NotificacionController {
     @Autowired
     private NotificacionService notificacionService;
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping("/usuario/{usuarioId}")
     public ResponseEntity<Notificacion> enviarNotificacion(@PathVariable Long usuarioId, @RequestBody Notificacion notificacion) {
         Notificacion nuevaNotificacion = notificacionService.enviarNotificacion(usuarioId, notificacion);

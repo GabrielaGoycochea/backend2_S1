@@ -5,8 +5,10 @@ import com.petsalud.backendpetsalud.service.ExpedienteMedicoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 
+@PreAuthorize("hasAnyAuthority('VETERINARIO','ADMIN')")
 @RestController
 @RequestMapping("/api/expedientes")
 public class ExpedienteMedicoController {

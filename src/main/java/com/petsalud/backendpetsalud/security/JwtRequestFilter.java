@@ -20,7 +20,7 @@ import java.io.IOException;
 /**
  * Intercepta cada solicitud, lee el header "Authorization: Bearer <token>" y, si el token
  * es valido, autentica al usuario en el SecurityContext. Se ejecuta antes de
- * UsernamePasswordAuthenticationFilter (ver SecurityConfig).
+ * UsernamePasswordAuthenticationFilter.
  */
 @Component
 @RequiredArgsConstructor

@@ -12,8 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Bloqueo temporal del login por intentos fallidos (fuerza bruta).
- * Tras {@code login.max-attempts} fallos seguidos (5 por defecto) el email queda bloqueado
- * {@code login.lock-minutes} minutos (5 por defecto). Mientras dura el bloqueo ni siquiera
+ * Tras fallos seguidos (5 por defecto) la clave (correo + IP) queda bloqueada
+   minutos . Mientras dura el bloqueo ni siquiera
  * se evalua la contrasena, y el bloqueo no se extiende con nuevos intentos.
  * Un login correcto reinicia el contador. Los fallos antiguos (mas viejos que la duracion
  * del bloqueo) no se acumulan. El estado vive en memoria: se pierde al reiniciar la aplicacion.

@@ -5,6 +5,7 @@ import com.petsalud.backendpetsalud.service.ProductoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 
 @RestController
@@ -14,6 +15,7 @@ public class ProductoController {
     @Autowired
     private ProductoService productoService;
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping
     public ResponseEntity<Producto> agregarProducto(@RequestBody Producto producto) {
         Producto nuevoProducto = productoService.agregarProducto(producto);
@@ -27,12 +29,14 @@ public class ProductoController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<Producto> actualizarProducto(@PathVariable Long id, @RequestBody Producto producto) {
         Producto productoActualizado = productoService.actualizarProducto(id, producto);
         return ResponseEntity.ok(productoActualizado);
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarProducto(@PathVariable Long id) {
         productoService.eliminarProducto(id);
@@ -51,6 +55,7 @@ public class ProductoController {
         return ResponseEntity.ok(productos);
     }
 
+    @PreAuthorize("hasAnyAuthority('VETERINARIO','ADMIN')")
     @GetMapping("/stock-bajo")
     public ResponseEntity<List<Producto>> listarProductosConStockBajo(@RequestParam Integer cantidad) {
         List<Producto> productos = productoService.listarProductosConStockBajo(cantidad);

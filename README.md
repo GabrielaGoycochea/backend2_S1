@@ -29,7 +29,7 @@ spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
 
 jwt.secret=${JWT_SECRET}
-jwt.expiration-ms=1800000
+jwt.expiration-ms=900000
 jwt.issuer=PetSalud
 
 login.max-attempts=5
@@ -46,7 +46,7 @@ Los valores `${...}` no se escriben en el archivo: Spring los lee de las variabl
 
 - El proyecto está configurado con el puerto `3307`. Cámbialo (por ejemplo a `3306`) si tu MySQL usa otro.
 - Las variables `${DB_USERNAME}`, `${DB_PASSWORD}` y `${JWT_SECRET}` deben existir como variables de entorno **antes de ejecutar la aplicación y en la misma terminal (o configuración de ejecución del IDE) desde donde se ejecuta**. Sin `${JWT_SECRET}` la aplicación no arranca.
-- La duración del token se define en `jwt.expiration-ms` (por defecto 30 minutos) y el emisor en `jwt.issuer`.
+- La duración del token se define en `jwt.expiration-ms` (por defecto 15 minutos) y el emisor en `jwt.issuer`.
 - El bloqueo del login se configura con `login.max-attempts` (5 intentos) y `login.lock-minutes` (5 minutos).
 - `createDatabaseIfNotExist=true` crea la base `petsalud_db` si no existe. Las tablas las crea Hibernate al iniciar.
 
@@ -117,7 +117,7 @@ Al realizar un login exitoso, el script de Postman guarda automáticamente el JW
 
 Las solicitudes protegidas utilizan **Authorization → Bearer Token** con el valor `{{jwtToken}}`.
 
-Para comprobar permisos de otro rol, inicia sesión con las credenciales correspondientes y obtén un nuevo token. La vigencia normal es de 30 minutos.
+Para comprobar permisos de otro rol, inicia sesión con las credenciales correspondientes y obtén un nuevo token. La vigencia normal es de 15 minutos.
 
 Las pruebas de las Figuras 18 y 19 utilizan variables adicionales (`jwtTokenAlterado` y `jwtTokenFijo19`), descritas en sus solicitudes.
 
@@ -132,7 +132,7 @@ Antes de comenzar, iniciar PETSALUD con la base de datos disponible, importar la
 5. **Figura 11:** cambiar las credenciales por las de un ADMIN, ejecutar nuevamente `01 - Login JWT` para reemplazar `jwtToken` y crear el producto. Se espera **200**; esta solicitud incorpora datos a la base.
 6. **Figura 17:** configurar `correoPrueba` con una cuenta CLIENTE de pruebas y ejecutar una vez el login con clave incorrecta. Se espera **401**. Cinco intentos fallidos consecutivos pueden activar un bloqueo temporal de cinco minutos, por lo que no deben repetirse salvo para comprobar expresamente ese mecanismo.
 
-Las Figuras 18 y 19 tienen instrucciones adicionales sobre firma alterada y expiración del JWT. Para repetir la Figura 19 desde cero, limpiar la variable `jwtTokenFijo19`, obtener un nuevo JWT con vigencia temporal de 60 segundos y ejecutar la solicitud antes y después del vencimiento. Restaurar posteriormente la vigencia normal de 30 minutos. Las 35 solicitudes no deben considerarse una secuencia automática de ejecución: requieren roles, datos y condiciones diferentes.
+Las Figuras 18 y 19 tienen instrucciones adicionales sobre firma alterada y expiración del JWT. Para repetir la Figura 19 desde cero, limpiar la variable `jwtTokenFijo19`, obtener un nuevo JWT con vigencia temporal de 60 segundos y ejecutar la solicitud antes y después del vencimiento. Restaurar posteriormente la vigencia normal de 15 minutos. Las 35 solicitudes no deben considerarse una secuencia automática de ejecución: requieren roles, datos y condiciones diferentes.
 
 ### Pruebas de seguridad
 
@@ -173,12 +173,14 @@ Body de la prueba 7:
 
 ### Bloqueo por intentos fallidos (lockout)
 
-Tras **5 intentos de login fallidos** con un mismo email, ese email queda bloqueado **5 minutos**:
+Tras **5 intentos de login fallidos** con un mismo correo desde una misma IP, esa combinación de correo e IP queda bloqueada **5 minutos**:
 
 - Intentos 1 a 5 con clave incorrecta: **401 Unauthorized**.
 - Desde el 6.º intento, durante el bloqueo, el login responde **429 Too Many Requests** (con `Retry-After` en segundos), aunque la clave sea correcta. Los intentos durante el bloqueo no lo extienden.
 - Pasados los 5 minutos, el email puede volver a iniciar sesión. Un login correcto antes del 5.º fallo reinicia el contador, y los fallos más antiguos que 5 minutos no se acumulan.
-- El bloqueo es por email (sin distinguir mayúsculas) y se guarda en memoria: se reinicia si se reinicia la aplicación.
+- El bloqueo es por **correo + IP** (el correo sin distinguir mayúsculas): quien ataca desde otra IP no bloquea al usuario real. Se guarda en memoria: se reinicia si se reinicia la aplicación.
+- Detrás de un proxy o balanceador, la IP que ve el servidor sería la del proxy y no la del usuario.
+- La prueba automatizada `AuthLockoutTest` incluye este escenario: un atacante bloqueado desde una IP no impide que el usuario real entre desde otra.
 - Para una demostración rápida, arranca con 1 minuto de bloqueo: `.\mvnw.cmd clean spring-boot:run "-Dspring-boot.run.profiles=prueba" "-Dspring-boot.run.arguments=--login.lock-minutes=1"`.
 - Usa `cliente@petsalud.cl` para probar, para no bloquear la cuenta del admin que necesitas en las demás pruebas.
 
@@ -221,7 +223,7 @@ La columna `password` muestra un hash que empieza con `$2a$`, nunca el texto ori
 | Cliente autenticado | Solo **sus propios** datos: sus mascotas, sus citas, sus ventas, sus notificaciones y sus recompensas |
 | VETERINARIO (empleado) | **Consulta** mascotas, expedientes y recompensas de los clientes; registra expedientes **a su propio nombre**; cambia el estado solo de **sus citas asignadas**. **No** modifica ni elimina mascotas, no consulta las ventas de los clientes ni gestiona citas de otros veterinarios |
 
-La autorización tiene dos capas: las reglas por ruta y rol de `SecurityConfig`, y la verificación de **propiedad** dentro de los servicios (`AutorizacionService`). La segunda evita que un cliente cambie el id en la URL y vea datos ajenos (IDOR) y se aplica en mascotas, citas, ventas, notificaciones, recompensas y expedientes.
+La autorización tiene tres capas: las reglas por ruta y rol de `SecurityConfig`, las anotaciones `@PreAuthorize` de los controladores (indican qué rol puede usar cada endpoint) y la verificación de **propiedad** dentro de los servicios (`AutorizacionService`). La segunda evita que un cliente cambie el id en la URL y vea datos ajenos (IDOR) y se aplica en mascotas, citas, ventas, notificaciones, recompensas y expedientes.
 
 
 ## 7. Pruebas automatizadas
@@ -238,6 +240,6 @@ Para ejecutar la suite completa, utiliza `.\mvnw.cmd test`. En la revisión loca
 
 - **CSRF desactivado:** se justifica porque la API es stateless y cada petición envía el encabezado `Authorization`.
 - **Citas:** el veterinario asignado no se valida contra su rol y los estados de una cita no están restringidos a una lista. El veterinario tampoco agenda citas (las agenda el cliente o el ADMIN).
-- **JWT sin revocación ni refresh:** un token es válido hasta que expira (30 minutos); no hay lista de tokens revocados ni token de refresco.
-- **Bloqueo en memoria:** el contador de intentos fallidos no se comparte entre varias instancias ni sobrevive a un reinicio. Además, quien conozca un email puede bloquearlo 5 minutos con intentos fallidos (compromiso habitual de este mecanismo).
-- **Pruebas:** el proyecto cuenta con 55 pruebas automatizadas aprobadas que incluyen validación de JWT, autenticación, autorización por roles, controles de los servicios y bloqueo de intentos de inicio de sesión. Las verificaciones manuales con Postman complementan esta cobertura, pero no se ha comprobado exhaustivamente el funcionamiento de todos los endpoints y escenarios posibles.
+- **JWT sin revocación ni refresh:** un token es válido hasta que expira (15 minutos); no hay lista de tokens revocados ni token de refresco. El token corto reduce el tiempo que sirve un token robado; un refresh token permitiría renovarlo sin pedir la contraseña (se discute en el informe).
+- **Bloqueo en memoria:** el contador de intentos fallidos no se comparte entre varias instancias ni sobrevive a un reinicio. Al contar por correo + IP, quien ataca desde otra IP ya no bloquea al usuario real; a cambio, un atacante con muchas IPs distintas puede probar 5 contraseñas desde cada una, y detrás de un proxy la IP vista sería la del proxy.
+- **Pruebas:** el proyecto cuenta con 56 pruebas automatizadas (55 aprobadas al documentarlas y 1 nueva, la del bloqueo por correo + IP, por confirmar con `.\mvnw.cmd test`) que incluyen validación de JWT, autenticación, autorización por roles, controles de los servicios y bloqueo de intentos de inicio de sesión. Las verificaciones manuales con Postman complementan esta cobertura, pero no se ha comprobado exhaustivamente el funcionamiento de todos los endpoints y escenarios posibles.

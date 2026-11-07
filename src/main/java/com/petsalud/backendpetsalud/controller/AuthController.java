@@ -1,5 +1,6 @@
 package com.petsalud.backendpetsalud.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import com.petsalud.backendpetsalud.dto.AuthRequest;
 import com.petsalud.backendpetsalud.dto.AuthResponse;
 import com.petsalud.backendpetsalud.security.JwtUtil;
@@ -39,16 +40,18 @@ public class AuthController {
     }
 
     // Autenticacion: valida email y contrasena y, si son correctos, devuelve un JWT.
-    // Tras 5 intentos fallidos el email se bloquea 5 minutos (429 Too Many Requests).
+    // Tras 5 intentos fallidos desde una misma IP, esa combinacion de correo e IP se bloquea
+    // 5 minutos (429 Too Many Requests). Asi quien ataca desde otra IP no bloquea al usuario real.
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody AuthRequest request) {
+    public ResponseEntity<?> login(@RequestBody AuthRequest request, HttpServletRequest httpRequest) {
         if (request == null || request.email() == null || request.email().isBlank()
                 || request.password() == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales invalidas");
         }
         String email = request.email().trim().toLowerCase(Locale.ROOT);
 
-        long espera = loginAttemptService.segundosRestantes(email);
+        String clave = email + "|" + httpRequest.getRemoteAddr(); // correo + IP
+        long espera = loginAttemptService.segundosRestantes(clave);
         if (espera > 0) {
             long minutos = (espera + 59) / 60;
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
@@ -60,12 +63,13 @@ public class AuthController {
         try {
             Authentication auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, request.password()));
-            loginAttemptService.registrarExito(email);
+            loginAttemptService.registrarExito(clave);
             String token = jwtUtil.generarToken((UserDetails) auth.getPrincipal());
             return ResponseEntity.ok(new AuthResponse(token));
         } catch (AuthenticationException e) {
-            if (loginAttemptService.registrarFallo(email)) {
-                log.warn("CUENTA BLOQUEADA usuario={} por intentos de login fallidos", email);
+            if (loginAttemptService.registrarFallo(clave)) {
+                log.warn("CUENTA BLOQUEADA usuario={} ip={} por intentos de login fallidos",
+                        email, httpRequest.getRemoteAddr());
             }
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales invalidas");
         }

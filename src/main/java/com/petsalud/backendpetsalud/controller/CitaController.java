@@ -5,6 +5,7 @@ import com.petsalud.backendpetsalud.service.CitaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -33,6 +34,7 @@ public class CitaController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PreAuthorize("hasAnyAuthority('VETERINARIO','ADMIN')")
     @PutMapping("/{id}/estado")
     public ResponseEntity<Cita> actualizarEstadoCita(@PathVariable Long id, @RequestParam String estado) {
         Cita citaActualizada = citaService.actualizarEstadoCita(id, estado);
@@ -51,12 +53,14 @@ public class CitaController {
         return ResponseEntity.ok(citas);
     }
 
+    @PreAuthorize("hasAnyAuthority('VETERINARIO','ADMIN')")
     @GetMapping("/veterinario/{veterinarioId}")
     public ResponseEntity<List<Cita>> listarCitasPorVeterinario(@PathVariable Long veterinarioId) {
         List<Cita> citas = citaService.listarCitasPorVeterinario(veterinarioId);
         return ResponseEntity.ok(citas);
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping("/entre-fechas")
     public ResponseEntity<List<Cita>> listarCitasEntreFechas(
             @RequestParam String inicio,

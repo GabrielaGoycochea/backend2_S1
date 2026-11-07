@@ -40,6 +40,17 @@ class AuthLockoutTest {
                 .content("{\"email\":\"" + email + "\",\"password\":\"" + clave + "\"}"));
     }
 
+    // Igual que login(), pero indicando desde que IP llega la peticion.
+    private org.springframework.test.web.servlet.ResultActions login(String email, String clave, String ip) throws Exception {
+        return mvc.perform(post("/api/auth/login")
+                .with(request -> {
+                    request.setRemoteAddr(ip);
+                    return request;
+                })
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"" + email + "\",\"password\":\"" + clave + "\"}"));
+    }
+
     @Test
     void cincoFallosBloqueanYElSextoIntentoDevuelve429AunConClaveCorrecta() throws Exception {
         String email = "bloqueo@petsalud.cl";
@@ -64,5 +75,22 @@ class AuthLockoutTest {
             login(email, "incorrecta").andExpect(status().isUnauthorized());
         }
         login(email, "Clave1234").andExpect(status().isOk());
+    }
+
+    @Test
+    void atacanteBloqueadoDesdeOtraIpNoDejaFueraAlUsuarioLegitimo() throws Exception {
+        String email = "victima@petsalud.cl";
+        prepararUsuario(email);
+        String ipAtacante = "203.0.113.50";
+        String ipUsuario = "198.51.100.10";
+
+        // El atacante falla 5 veces desde su IP y queda bloqueado
+        for (int i = 0; i < 5; i++) {
+            login(email, "incorrecta", ipAtacante).andExpect(status().isUnauthorized());
+        }
+        login(email, "Clave1234", ipAtacante).andExpect(status().isTooManyRequests());
+
+        // El usuario real, desde su propia IP, sigue pudiendo entrar
+        login(email, "Clave1234", ipUsuario).andExpect(status().isOk());
     }
 }

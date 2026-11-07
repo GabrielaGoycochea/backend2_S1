@@ -6,6 +6,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -19,11 +20,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 /**
  * Seguridad del backend de Clinica PetSalud.
  * Autenticacion: login con email y contrasena (BCrypt) que entrega un JWT; luego cada
- * peticion se autentica con el header "Authorization: Bearer <token>" (Semana 2).
+ * peticion se autentica con el header "Authorization: Bearer <token>"
  * Autorizacion: por rol. Equivalencias: CLIENTE = cliente, VETERINARIO = empleado, ADMIN = gerente.
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity // permite usar @PreAuthorize en los controladores
 public class SecurityConfig {
 
     private static final String ADMIN = "ADMIN";

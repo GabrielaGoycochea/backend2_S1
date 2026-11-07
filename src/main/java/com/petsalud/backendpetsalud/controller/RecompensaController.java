@@ -5,6 +5,7 @@ import com.petsalud.backendpetsalud.service.RecompensaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 
 @RestController
@@ -14,6 +15,7 @@ public class RecompensaController {
     @Autowired
     private RecompensaService recompensaService;
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping("/usuario/{usuarioId}")
     public ResponseEntity<Recompensa> agregarRecompensa(@PathVariable Long usuarioId, @RequestBody Recompensa recompensa) {
         Recompensa nuevaRecompensa = recompensaService.agregarRecompensa(usuarioId, recompensa);
@@ -33,6 +35,7 @@ public class RecompensaController {
         return ResponseEntity.ok(recompensas);
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarRecompensa(@PathVariable Long id) {
         recompensaService.eliminarRecompensa(id);

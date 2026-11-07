@@ -5,6 +5,7 @@ import com.petsalud.backendpetsalud.service.VentaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 
 @RestController
@@ -35,6 +36,7 @@ public class VentaController {
         return ResponseEntity.ok(ventas);
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping
     public ResponseEntity<List<Venta>> listarTodasLasVentas() {
         List<Venta> ventas = ventaService.listarTodasLasVentas();
