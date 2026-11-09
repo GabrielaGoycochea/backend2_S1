@@ -1,0 +1,73 @@
+Coleccion PetSalud_Semana3_Amenazas ejecutada con newman 6.2.1 (equivalente al Collection Runner de Postman)
+API con perfil prueba y base de datos real, 2026-11-06
+
+❏ 01 - SQL Injection
+↳ SQLi en el login (credenciales)
+  POST http://localhost:8080/api/auth/login [401 Unauthorized, 554B, 91ms]
+  ✓  Responde 401
+↳ SQLi en el email del registro
+  POST http://localhost:8080/api/usuarios/registro [400 Bad Request, 616B, 15ms]
+  ✓  Responde 400
+↳ SQLi en la búsqueda por categoría
+  GET http://localhost:8080/api/productos/categoria?categoria=Alimentos' OR '1'='1' -- [400 Bad Request, 625B, 10ms]
+  ✓  Responde 400
+↳ SQLi en el id de la ruta
+  GET http://localhost:8080/api/mascotas/1 OR 1=1 [400 Bad Request, 597B, 17ms]
+  ✓  Responde 400
+❏ 02 - XSS
+↳ Script en el nombre de la mascota (CLIENTE)
+  POST http://localhost:8080/api/mascotas/propietario/1 [400 Bad Request, 617B, 18ms]
+  ✓  Responde 400
+↳ HTML en el diagnóstico (VETERINARIO)
+  POST http://localhost:8080/api/expedientes?mascotaId=1&veterinarioId=2 [400 Bad Request, 622B, 15ms]
+  ✓  Responde 400
+↳ Script en el motivo de la cita (CLIENTE)
+  POST http://localhost:8080/api/citas?mascotaId=1&veterinarioId=2&fechaHora=2026-12-01T10:00:00&motivo=<script>alert(1)</script> [400 Bad Request, 622B, 22ms]
+  ✓  Responde 400
+↳ Cabeceras de seguridad en la respuesta
+  GET http://localhost:8080/api/productos [200 OK, 524B, 8ms]
+  ✓  Responde 200
+  ✓  Trae Content-Security-Policy
+  ✓  Trae X-Content-Type-Options
+❏ 03 - CSRF
+↳ Cookie de sesión sin Bearer
+  POST http://localhost:8080/api/productos [401 Unauthorized, 491B, 4ms]
+  ✓  Responde 401
+↳ Login no entrega cookie de sesión
+  POST http://localhost:8080/api/auth/login [200 OK, 763B, 84ms]
+  ✓  Responde 200
+  ✓  Sin Set-Cookie
+↳ Preflight desde un sitio no autorizado
+  OPTIONS http://localhost:8080/api/productos [403 Forbidden, 517B, 4ms]
+  ✓  Responde 403
+↳ Preflight desde el front autorizado
+  OPTIONS http://localhost:8080/api/productos [200 OK, 614B, 5ms]
+  ✓  Responde 200
+❏ 04 - Roles con @PreAuthorize
+↳ CLIENTE envía notificación
+  POST http://localhost:8080/api/notificaciones/usuario/1 [403 Forbidden, 646B, 14ms]
+  ✓  Responde 403
+↳ VETERINARIO elimina expediente
+  DELETE http://localhost:8080/api/expedientes/1 [403 Forbidden, 635B, 11ms]
+  ✓  Responde 403
+↳ ADMIN envía notificación
+  POST http://localhost:8080/api/notificaciones/usuario/3 [200 OK, 776B, 35ms]
+  ✓  Responde 200
+❏ 05 - Monitoreo
+↳ JWT con la firma alterada
+  GET http://localhost:8080/api/productos/stock-bajo?cantidad=5 [401 Unauthorized, 491B, 5ms]
+  ✓  Responde 401
+┌─────────────────────────┬───────────────────┬──────────────────┐
+│                         │          executed │           failed │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│              iterations │                 1 │                0 │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│                requests │                19 │                0 │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│            test-scripts │                19 │                0 │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│      prerequest-scripts │                 0 │                0 │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│              assertions │                22 │                0 │
+├─────────────────────────┴───────────────────┴──────────────────┤
+└────────────────────────────────────────────────────────────────┘

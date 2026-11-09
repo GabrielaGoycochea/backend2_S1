@@ -17,6 +17,7 @@ import static org.mockito.Mockito.*;
 class JwtRequestFilterTest {
     private JwtUtil jwtUtil;
     private UsuarioDetailsService usuarios;
+    private ActividadSospechosaService actividad;
     private JwtRequestFilter filtro;
     private MockHttpServletRequest request;
     private MockHttpServletResponse response;
@@ -27,7 +28,8 @@ class JwtRequestFilterTest {
         SecurityContextHolder.clearContext();
         jwtUtil = mock(JwtUtil.class);
         usuarios = mock(UsuarioDetailsService.class);
-        filtro = new JwtRequestFilter(jwtUtil, usuarios);
+        actividad = mock(ActividadSospechosaService.class);
+        filtro = new JwtRequestFilter(jwtUtil, usuarios, actividad);
         request = new MockHttpServletRequest("GET", "/api/mascotas/1");
         response = new MockHttpServletResponse();
         chain = mock(FilterChain.class);
@@ -42,7 +44,7 @@ class JwtRequestFilterTest {
     void sinTokenNoAutentica() throws Exception {
         filtro.doFilter(request, response, chain);
         assertNull(SecurityContextHolder.getContext().getAuthentication());
-        verifyNoInteractions(jwtUtil, usuarios);
+        verifyNoInteractions(jwtUtil, usuarios, actividad);
         verify(chain).doFilter(request, response);
     }
 
@@ -68,6 +70,7 @@ class JwtRequestFilterTest {
         filtro.doFilter(request, response, chain);
         assertNull(SecurityContextHolder.getContext().getAuthentication());
         verifyNoInteractions(usuarios);
+        verify(actividad).jwtInvalido(request, "MalformedJwtException");
         verify(chain).doFilter(request, response);
     }
 
@@ -90,6 +93,7 @@ class JwtRequestFilterTest {
         when(jwtUtil.validarToken("ajeno", usuario)).thenReturn(false);
         filtro.doFilter(request, response, chain);
         assertNull(SecurityContextHolder.getContext().getAuthentication());
+        verify(actividad).jwtInvalido(eq(request), anyString());
         verify(chain).doFilter(request, response);
     }
 }

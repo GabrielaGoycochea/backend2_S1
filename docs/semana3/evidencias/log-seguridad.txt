@@ -1,0 +1,32 @@
+Eventos del logger SEGURIDAD en logs/petsalud.log durante las pruebas manuales
+(se omiten las lineas LOGIN_OK de la preparacion; ninguna linea contiene contrasenas ni tokens)
+
+2026-11-06T12:02:01.440-03:00 INFO OPERACION usuario=cliente@petsalud.cl ip=127.0.0.1 POST /api/mascotas/propietario/3 status=200
+2026-11-06T12:02:01.550-03:00 WARN LOGIN_FALLIDO usuario=' or '1'='1' -- ip=127.0.0.1 fallosSeguidos=1
+2026-11-06T12:02:01.649-03:00 WARN ENTRADA_RECHAZADA usuario=anonimo ip=127.0.0.1 POST /api/usuarios/registro campos=email
+2026-11-06T12:02:01.699-03:00 WARN ENTRADA_RECHAZADA usuario=anonimo ip=127.0.0.1 GET /api/productos/categoria campos=categoria
+2026-11-06T12:02:01.740-03:00 WARN ENTRADA_RECHAZADA usuario=cliente@petsalud.cl ip=127.0.0.1 GET /api/mascotas/1%20OR%201=1 campos=id
+2026-11-06T12:02:01.769-03:00 WARN ENTRADA_RECHAZADA usuario=cliente@petsalud.cl ip=127.0.0.1 POST /api/mascotas/propietario/3 campos=nombre
+2026-11-06T12:02:01.801-03:00 WARN ENTRADA_RECHAZADA usuario=vet@petsalud.cl ip=127.0.0.1 POST /api/expedientes campos=diagnostico
+2026-11-06T12:02:01.834-03:00 WARN ENTRADA_RECHAZADA usuario=cliente@petsalud.cl ip=127.0.0.1 POST /api/citas campos=motivo
+2026-11-06T12:02:01.913-03:00 INFO OPERACION usuario=vet@petsalud.cl ip=127.0.0.1 POST /api/expedientes status=200
+2026-11-06T12:02:02.049-03:00 INFO OPERACION usuario=anonimo ip=127.0.0.1 POST /api/usuarios/registro status=200
+2026-11-06T12:02:02.227-03:00 INFO OPERACION usuario=otro.cliente@petsalud.cl ip=127.0.0.1 POST /api/mascotas/propietario/4 status=200
+2026-11-06T12:02:02.308-03:00 WARN ACCESO_DENEGADO usuario=otro.cliente@petsalud.cl ip=127.0.0.1 GET /api/mascotas/1
+2026-11-06T12:02:02.341-03:00 WARN SIN_AUTENTICACION ip=127.0.0.1 POST /api/productos
+2026-11-06T12:02:02.517-03:00 WARN ACCESO_DENEGADO usuario=cliente@petsalud.cl ip=127.0.0.1 POST /api/notificaciones/usuario/3
+2026-11-06T12:02:02.569-03:00 INFO OPERACION usuario=admin@petsalud.cl ip=127.0.0.1 POST /api/notificaciones/usuario/3 status=200
+2026-11-06T12:02:02.639-03:00 WARN ACCESO_DENEGADO usuario=vet@petsalud.cl ip=127.0.0.1 DELETE /api/expedientes/1
+2026-11-06T12:02:02.667-03:00 WARN ACCESO_DENEGADO usuario=cliente@petsalud.cl ip=127.0.0.1 GET /api/expedientes/1
+2026-11-06T12:02:02.709-03:00 INFO OPERACION usuario=admin@petsalud.cl ip=127.0.0.1 DELETE /api/expedientes/1 status=204
+2026-11-06T12:02:02.724-03:00 WARN JWT_INVALIDO ip=127.0.0.1 GET /api/productos/stock-bajo motivo=SignatureException
+2026-11-06T12:02:02.726-03:00 WARN SIN_AUTENTICACION ip=127.0.0.1 GET /api/productos/stock-bajo
+2026-11-06T12:02:02.740-03:00 WARN SIN_AUTENTICACION ip=127.0.0.1 GET /api/usuarios
+2026-11-06T12:02:02.828-03:00 WARN LOGIN_FALLIDO usuario=otro.cliente@petsalud.cl ip=127.0.0.1 fallosSeguidos=1
+2026-11-06T12:02:02.921-03:00 WARN LOGIN_FALLIDO usuario=otro.cliente@petsalud.cl ip=127.0.0.1 fallosSeguidos=2
+2026-11-06T12:02:03.016-03:00 WARN LOGIN_FALLIDO usuario=otro.cliente@petsalud.cl ip=127.0.0.1 fallosSeguidos=3
+2026-11-06T12:02:03.107-03:00 WARN LOGIN_FALLIDO usuario=otro.cliente@petsalud.cl ip=127.0.0.1 fallosSeguidos=4
+2026-11-06T12:02:03.201-03:00 WARN LOGIN_FALLIDO usuario=otro.cliente@petsalud.cl ip=127.0.0.1 fallosSeguidos=5
+2026-11-06T12:02:03.201-03:00 WARN CUENTA_BLOQUEADA usuario=otro.cliente@petsalud.cl ip=127.0.0.1 minutos=5 motivo=posible_fuerza_bruta
+2026-11-06T12:02:03.219-03:00 WARN LOGIN_RECHAZADO_BLOQUEO usuario=otro.cliente@petsalud.cl ip=127.0.0.1
+2026-11-06T12:02:05.531-03:00 WARN RAFAGA_SOLICITUDES ip=127.0.0.1 solicitudes=201 ventanaMinutos=15

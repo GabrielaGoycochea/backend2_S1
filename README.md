@@ -2,6 +2,19 @@
 
 API REST con Spring Boot 3, Spring Security con autenticación JWT (stateless), JPA y MySQL.
 
+## Novedades de la Semana 3 (rama `semana3-seguridad`)
+
+| Criterio de la pauta | Qué se agregó | Dónde |
+|---|---|---|
+| 1 y 7. Análisis e informe | Amenazas, requerimientos, matriz de roles, estrategias, guía y explicación técnica | `docs/semana3/INFORME_SEMANA3.md` |
+| 2. Configuración | Monitoreo de actividad sospechosa con log en archivo, cabeceras de seguridad y CORS restringido | `ActividadSospechosaService`, `AuditoriaRequestFilter`, `SecurityConfig` |
+| 3. JWT | El token incluye y exige la audiencia (`aud=petsalud-api`) además del emisor | `JwtUtil` |
+| 4. Roles | `@PreAuthorize` en los 43 endpoints; eliminar expedientes queda solo para ADMIN | `ReglasAcceso`, controladores |
+| 5. Amenazas | DTO validados (sin `<`, `>`, comillas ni asignación masiva) y pruebas de SQL Injection, XSS y CSRF | `dto/`, `AmenazasComunesTest`, `InyeccionSqlRepositorioTest`, colección Postman de la Semana 3 |
+| 6. GitHub | Este README, el informe y las evidencias | `docs/semana3/` |
+
+Resultado: **97 pruebas automáticas sin fallos** (42 nuevas) y 23 pruebas manuales contra la API con base de datos real (`docs/semana3/evidencias/`).
+
 ## 1. Requisitos
 
 | Herramienta | Detalle |
@@ -29,11 +42,18 @@ spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
 
 jwt.secret=${JWT_SECRET}
-jwt.expiration-ms=1800000
+jwt.expiration-ms=900000
 jwt.issuer=PetSalud
 
 login.max-attempts=5
 login.lock-minutes=5
+
+# Semana 3
+jwt.audience=petsalud-api
+logging.file.name=logs/petsalud.log
+seguridad.monitor.max-solicitudes=200
+seguridad.monitor.ventana-minutos=15
+cors.allowed-origins=http://localhost:3000,http://localhost:5173
 ```
 
 Los valores `${...}` no se escriben en el archivo: Spring los lee de las variables de entorno del equipo.
@@ -46,7 +66,7 @@ Los valores `${...}` no se escriben en el archivo: Spring los lee de las variabl
 
 - El proyecto está configurado con el puerto `3307`. Cámbialo (por ejemplo a `3306`) si tu MySQL usa otro.
 - Las variables `${DB_USERNAME}`, `${DB_PASSWORD}` y `${JWT_SECRET}` deben existir como variables de entorno **antes de ejecutar la aplicación y en la misma terminal (o configuración de ejecución del IDE) desde donde se ejecuta**. Sin `${JWT_SECRET}` la aplicación no arranca.
-- La duración del token se define en `jwt.expiration-ms` (por defecto 30 minutos) y el emisor en `jwt.issuer`.
+- La duración del token se define en `jwt.expiration-ms` (por defecto 15 minutos) y el emisor en `jwt.issuer`.
 - El bloqueo del login se configura con `login.max-attempts` (5 intentos) y `login.lock-minutes` (5 minutos).
 - `createDatabaseIfNotExist=true` crea la base `petsalud_db` si no existe. Las tablas las crea Hibernate al iniciar.
 
@@ -117,7 +137,7 @@ Al realizar un login exitoso, el script de Postman guarda automáticamente el JW
 
 Las solicitudes protegidas utilizan **Authorization → Bearer Token** con el valor `{{jwtToken}}`.
 
-Para comprobar permisos de otro rol, inicia sesión con las credenciales correspondientes y obtén un nuevo token. La vigencia normal es de 30 minutos.
+Para comprobar permisos de otro rol, inicia sesión con las credenciales correspondientes y obtén un nuevo token. La vigencia normal es de 15 minutos.
 
 Las pruebas de las Figuras 18 y 19 utilizan variables adicionales (`jwtTokenAlterado` y `jwtTokenFijo19`), descritas en sus solicitudes.
 
@@ -132,7 +152,7 @@ Antes de comenzar, iniciar PETSALUD con la base de datos disponible, importar la
 5. **Figura 11:** cambiar las credenciales por las de un ADMIN, ejecutar nuevamente `01 - Login JWT` para reemplazar `jwtToken` y crear el producto. Se espera **200**; esta solicitud incorpora datos a la base.
 6. **Figura 17:** configurar `correoPrueba` con una cuenta CLIENTE de pruebas y ejecutar una vez el login con clave incorrecta. Se espera **401**. Cinco intentos fallidos consecutivos pueden activar un bloqueo temporal de cinco minutos, por lo que no deben repetirse salvo para comprobar expresamente ese mecanismo.
 
-Las Figuras 18 y 19 tienen instrucciones adicionales sobre firma alterada y expiración del JWT. Para repetir la Figura 19 desde cero, limpiar la variable `jwtTokenFijo19`, obtener un nuevo JWT con vigencia temporal de 60 segundos y ejecutar la solicitud antes y después del vencimiento. Restaurar posteriormente la vigencia normal de 30 minutos. Las 35 solicitudes no deben considerarse una secuencia automática de ejecución: requieren roles, datos y condiciones diferentes.
+Las Figuras 18 y 19 tienen instrucciones adicionales sobre firma alterada y expiración del JWT. Para repetir la Figura 19 desde cero, limpiar la variable `jwtTokenFijo19`, obtener un nuevo JWT con vigencia temporal de 60 segundos y ejecutar la solicitud antes y después del vencimiento. Restaurar posteriormente la vigencia normal de 15 minutos. Las 35 solicitudes no deben considerarse una secuencia automática de ejecución: requieren roles, datos y condiciones diferentes.
 
 ### Pruebas de seguridad
 
@@ -141,8 +161,8 @@ Las Figuras 18 y 19 tienen instrucciones adicionales sobre firma alterada y expi
 | 1 | `GET http://localhost:8080/api/usuarios` | Ninguna | **401 Unauthorized** |
 | 2 | `GET http://localhost:8080/api/usuarios` | `cliente@petsalud.cl` | **403 Forbidden** (rol insuficiente) |
 | 3 | `GET http://localhost:8080/api/usuarios` | `admin@petsalud.cl` | **200 OK**, lista de usuarios **sin** el campo `password` |
-| 4 | `POST http://localhost:8080/api/auth/login` con la contraseña de `admin@petsalud.cl` incorrecta | Ninguna | **401** ("Credenciales invalidas") y en la consola de Spring aparece `LOGIN FALLIDO` |
-| 4a | `POST http://localhost:8080/api/auth/login` con clave incorrecta, **5 veces seguidas** (usa `cliente@petsalud.cl`) | Ninguna | Intentos 1 a 5: **401**. En el 5.º aparece `CUENTA BLOQUEADA` en la consola |
+| 4 | `POST http://localhost:8080/api/auth/login` con la contraseña de `admin@petsalud.cl` incorrecta | Ninguna | **401** ("Credenciales invalidas") y en la consola aparece `LOGIN_FALLIDO` con la IP y los fallos seguidos |
+| 4a | `POST http://localhost:8080/api/auth/login` con clave incorrecta, **5 veces seguidas** (usa `cliente@petsalud.cl`) | Ninguna | Intentos 1 a 5: **401**. En el 5.º aparece `CUENTA_BLOQUEADA` en la consola y en `logs/petsalud.log` |
 | 4b | `GET http://localhost:8080/api/usuarios` | Bearer Token del admin con un carácter alterado | **401** (firma inválida) |
 | 4c | El mismo login (ahora **con la clave correcta**) inmediatamente después | Ninguna | **429 Too Many Requests**, con encabezado `Retry-After` y el mensaje de cuenta bloqueada |
 | 4d | El mismo login con la clave correcta pasados **5 minutos** | Ninguna | **200 OK** con token (bloqueo terminado) |
@@ -173,12 +193,12 @@ Body de la prueba 7:
 
 ### Bloqueo por intentos fallidos (lockout)
 
-Tras **5 intentos de login fallidos** con un mismo email, ese email queda bloqueado **5 minutos**:
+Tras **5 intentos de login fallidos** con el mismo correo y desde la misma IP, esa combinación queda bloqueada **5 minutos**:
 
 - Intentos 1 a 5 con clave incorrecta: **401 Unauthorized**.
 - Desde el 6.º intento, durante el bloqueo, el login responde **429 Too Many Requests** (con `Retry-After` en segundos), aunque la clave sea correcta. Los intentos durante el bloqueo no lo extienden.
-- Pasados los 5 minutos, el email puede volver a iniciar sesión. Un login correcto antes del 5.º fallo reinicia el contador, y los fallos más antiguos que 5 minutos no se acumulan.
-- El bloqueo es por email (sin distinguir mayúsculas) y se guarda en memoria: se reinicia si se reinicia la aplicación.
+- Pasados los 5 minutos, la combinación de correo e IP queda desbloqueada. Un login correcto antes del 5.º fallo reinicia el contador, y los fallos más antiguos que 5 minutos no se acumulan.
+- El bloqueo es por correo + IP (sin distinguir mayúsculas en el correo) y se guarda en memoria: se reinicia si se reinicia la aplicación.
 - Para una demostración rápida, arranca con 1 minuto de bloqueo: `.\mvnw.cmd clean spring-boot:run "-Dspring-boot.run.profiles=prueba" "-Dspring-boot.run.arguments=--login.lock-minutes=1"`.
 - Usa `cliente@petsalud.cl` para probar, para no bloquear la cuenta del admin que necesitas en las demás pruebas.
 
@@ -221,7 +241,13 @@ La columna `password` muestra un hash que empieza con `$2a$`, nunca el texto ori
 | Cliente autenticado | Solo **sus propios** datos: sus mascotas, sus citas, sus ventas, sus notificaciones y sus recompensas |
 | VETERINARIO (empleado) | **Consulta** mascotas, expedientes y recompensas de los clientes; registra expedientes **a su propio nombre**; cambia el estado solo de **sus citas asignadas**. **No** modifica ni elimina mascotas, no consulta las ventas de los clientes ni gestiona citas de otros veterinarios |
 
-La autorización tiene dos capas: las reglas por ruta y rol de `SecurityConfig`, y la verificación de **propiedad** dentro de los servicios (`AutorizacionService`). La segunda evita que un cliente cambie el id en la URL y vea datos ajenos (IDOR) y se aplica en mascotas, citas, ventas, notificaciones, recompensas y expedientes.
+La autorización tiene tres capas:
+
+1. Las reglas por ruta y rol de `SecurityConfig`.
+2. **Semana 3:** `@PreAuthorize` en cada método de los controladores, con las reglas de `ReglasAcceso` (`PUBLICO`, `AUTENTICADO`, `PERSONAL` y `GERENTE`). Si una ruta quedara mal configurada, la anotación igual bloquea al rol incorrecto. `PreAuthorizeTest` falla si algún endpoint queda sin regla.
+3. La verificación de **propiedad** dentro de los servicios (`AutorizacionService`), que evita que un cliente cambie el id en la URL y vea datos ajenos (IDOR). Se aplica en mascotas, citas, ventas, notificaciones, recompensas y expedientes.
+
+Desde la Semana 3, eliminar un expediente médico (`DELETE /api/expedientes/{id}`) es solo para ADMIN.
 
 
 ## 7. Pruebas automatizadas
@@ -232,12 +258,67 @@ El proyecto incluye pruebas automatizadas de autorización en servicios, validac
 .\mvnw.cmd test "-Dtest=*SecurityTest,AutorizacionServiceTest,Jwt*Test,SecurityConfigHttpTest,LoginAttemptServiceTest,AuthLockoutTest"
 ```
 
-Para ejecutar la suite completa, utiliza `.\mvnw.cmd test`. En la revisión local de la versión integrada se aprobaron **55 pruebas, sin fallos, errores ni pruebas omitidas, con resultado BUILD SUCCESS**. Esta ejecución incluye `BackendpetsaludApplicationTests`, por lo que requiere MySQL disponible y las variables de conexión y `JWT_SECRET` correctamente configuradas. En el entorno local de revisión se utilizó MySQL en el puerto 3306.
+Para ejecutar la suite completa, utiliza `.\mvnw.cmd test`. Con la Semana 3 la suite tiene **97 pruebas, sin fallos, errores ni pruebas omitidas, con resultado BUILD SUCCESS** (en la Semana 2 eran 55).
+
+Pruebas nuevas de la Semana 3:
+
+| Clase | Qué comprueba |
+|---|---|
+| `PreAuthorizeTest` | Todos los endpoints tienen `@PreAuthorize` y los roles incorrectos reciben 403 sin llegar al servicio |
+| `AmenazasComunesTest` | SQL Injection (login, registro, búsqueda e id), XSS (mascota, diagnóstico y motivo de cita), cabeceras de seguridad y CSRF (cookie sin Bearer, login sin sesión y CORS) |
+| `InyeccionSqlRepositorioTest` | Cargas de inyección contra una base H2 real y que ningún repositorio use SQL nativo |
+| `MonitoreoSeguridadTest` y `ActividadSospechosaServiceTest` | Los eventos de seguridad quedan registrados con IP y sin contraseñas ni tokens |
+| `AuthLockoutTest` y `JwtUtilTest` (1 nueva cada una) | Cinco fallos desde una IP no bloquean al mismo usuario desde otra IP, y el JWT dura 15 minutos |
+
+Solo las pruebas de la Semana 3 (no necesitan MySQL):
+
+```powershell
+.\mvnw.cmd test "-Dtest=PreAuthorizeTest,AmenazasComunesTest,InyeccionSqlRepositorioTest,MonitoreoSeguridadTest,ActividadSospechosaServiceTest"
+```
+ Esta ejecución incluye `BackendpetsaludApplicationTests`, por lo que requiere MySQL disponible y las variables de conexión y `JWT_SECRET` correctamente configuradas. En el entorno local de revisión se utilizó MySQL en el puerto 3306.
 
 ## 8. Limitaciones conocidas
 
-- **CSRF desactivado:** se justifica porque la API es stateless y cada petición envía el encabezado `Authorization`.
-- **Citas:** el veterinario asignado no se valida contra su rol y los estados de una cita no están restringidos a una lista. El veterinario tampoco agenda citas (las agenda el cliente o el ADMIN).
-- **JWT sin revocación ni refresh:** un token es válido hasta que expira (30 minutos); no hay lista de tokens revocados ni token de refresco.
-- **Bloqueo en memoria:** el contador de intentos fallidos no se comparte entre varias instancias ni sobrevive a un reinicio. Además, quien conozca un email puede bloquearlo 5 minutos con intentos fallidos (compromiso habitual de este mecanismo).
-- **Pruebas:** el proyecto cuenta con 55 pruebas automatizadas aprobadas que incluyen validación de JWT, autenticación, autorización por roles, controles de los servicios y bloqueo de intentos de inicio de sesión. Las verificaciones manuales con Postman complementan esta cobertura, pero no se ha comprobado exhaustivamente el funcionamiento de todos los endpoints y escenarios posibles.
+- **CSRF desactivado:** la credencial viaja solo en el header `Authorization`, que el navegador no agrega por su cuenta, y la API no usa cookies ni sesión. Se complementa con CORS restringido a `cors.allowed-origins`. Si algún día el token se guarda en una cookie, hay que reactivar CSRF.
+- **Citas:** el veterinario asignado no se valida contra su rol, y el estado de una cita solo se valida como texto (letras, 3 a 20 caracteres), no contra una lista cerrada. El veterinario tampoco agenda citas (las agenda el cliente o el ADMIN).
+- **JWT sin revocación ni refresh:** un token es válido hasta que expira (15 minutos); no hay lista de tokens revocados ni token de refresco.
+- **Bloqueo en memoria:** el contador de intentos fallidos no se comparte entre varias instancias ni sobrevive a un reinicio. La combinación de correo + IP reduce el riesgo de bloqueo provocado desde otra IP, pero un atacante puede distribuir intentos entre distintas IP. Detrás de un proxy, debe configurarse correctamente la identificación de la IP del cliente.
+- **Monitoreo en memoria:** el conteo de solicitudes por IP también vive en memoria. En producción, el archivo `logs/petsalud.log` debería enviarse a un sistema de monitoreo (IDS/IPS o SIEM).
+- **Pruebas:** el proyecto cuenta con 97 pruebas automatizadas aprobadas que incluyen validación de JWT, autenticación, autorización por roles, controles de los servicios y bloqueo de intentos de inicio de sesión. Las verificaciones manuales con Postman complementan esta cobertura, pero no se ha comprobado exhaustivamente el funcionamiento de todos los endpoints y escenarios posibles.
+
+## 9. Monitoreo de actividad sospechosa (Semana 3)
+
+`ActividadSospechosaService` escribe un evento por línea en el logger `SEGURIDAD`, en la consola y en `logs/petsalud.log`. Cada línea trae fecha, hora, IP, usuario, método y ruta. Nunca registra contraseñas ni tokens, y reemplaza los saltos de línea para que nadie pueda falsificar líneas del log.
+
+| Evento | Cuándo |
+|---|---|
+| `LOGIN_OK` / `LOGIN_FALLIDO` | Login correcto o incorrecto (incluye fallos seguidos) |
+| `CUENTA_BLOQUEADA` / `LOGIN_RECHAZADO_BLOQUEO` | Quinto fallo seguido / intento durante el bloqueo |
+| `JWT_INVALIDO` | Token alterado, vencido, de otro emisor o audiencia |
+| `SIN_AUTENTICACION` / `ACCESO_DENEGADO` | Respuestas 401 / 403 |
+| `ENTRADA_RECHAZADA` | Datos que no pasan la validación (solo los nombres de los campos) |
+| `OPERACION` | POST, PUT o DELETE exitoso, con el usuario que lo hizo |
+| `RAFAGA_SOLICITUDES` | Más de 200 solicitudes desde una IP en 15 minutos |
+
+Ejemplo real (`docs/semana3/evidencias/log-seguridad.txt`):
+
+```text
+WARN ACCESO_DENEGADO usuario=vet@petsalud.cl ip=127.0.0.1 DELETE /api/expedientes/1
+WARN JWT_INVALIDO ip=127.0.0.1 GET /api/productos/stock-bajo motivo=SignatureException
+WARN CUENTA_BLOQUEADA usuario=otro.cliente@petsalud.cl ip=127.0.0.1 minutos=5 motivo=posible_fuerza_bruta
+```
+
+## 10. Pruebas de amenazas en Postman (Semana 3)
+
+Importa `postman/PetSalud_Semana3_Amenazas.postman_collection.json` (si ya estaba importada, elige **Replace**). Configura la variable `clavePrueba` con la clave del perfil `prueba` y ejecuta la colección completa con el **Collection Runner** (clic derecho > **Run collection**). La carpeta `00 - Preparación` deja todo listo sin ingresar valores a mano: inicia sesión con los tres roles (`tokenCliente`, `tokenVet` y `tokenAdmin`), obtiene los IDs de los usuarios y busca la mascota `MascotaPrueba` y su expediente de prueba; si no existen, los crea en la base. Cada solicitud trae una prueba con el código esperado.
+
+En la primera ejecución se crean la mascota y el expediente (24 solicitudes, 35 pruebas). En las siguientes, las dos solicitudes de creación se omiten y no se duplican datos (31 pruebas).
+
+| Carpeta | Solicitudes | Resultado esperado |
+|---|---|---|
+| 00 - Preparación | Logins por rol, IDs de usuarios, mascota y expediente de prueba (se crean solo si no existen) | 200 |
+| 01 - SQL Injection | Login, registro, búsqueda por categoría e id de ruta con inyección | 401 en el login y 400 en el resto |
+| 02 - XSS | Script o HTML en mascota, diagnóstico y motivo de cita; cabeceras de la respuesta | 400 y cabeceras `Content-Security-Policy`, `nosniff` y `DENY` |
+| 03 - CSRF | Cookie sin Bearer, login sin `Set-Cookie` y preflight CORS desde otro sitio | 401, sin cookie y 403 |
+| 04 - Roles con @PreAuthorize | Cliente envía notificación, veterinario elimina expediente, gerente envía notificación | 403, 403 y 200 |
+| 05 - Monitoreo | JWT con la firma alterada | 401 y `JWT_INVALIDO` en el log |

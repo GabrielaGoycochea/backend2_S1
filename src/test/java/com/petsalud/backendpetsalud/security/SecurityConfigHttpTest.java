@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ProductoController.class)
-@Import({SecurityConfig.class, JwtRequestFilter.class})
+@Import({SecurityConfig.class, JwtRequestFilter.class, ActividadSospechosaService.class})
 class SecurityConfigHttpTest {
     @Autowired private MockMvc mvc;
     @MockBean private ProductoService productos;
