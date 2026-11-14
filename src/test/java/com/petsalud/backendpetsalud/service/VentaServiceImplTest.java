@@ -1,6 +1,7 @@
 package com.petsalud.backendpetsalud.service;
 
 import com.petsalud.backendpetsalud.entity.Producto;
+import com.petsalud.backendpetsalud.entity.Proveedor;
 import com.petsalud.backendpetsalud.entity.Rol;
 import com.petsalud.backendpetsalud.entity.Usuario;
 import com.petsalud.backendpetsalud.entity.Venta;
@@ -233,5 +234,96 @@ class VentaServiceImplTest {
         assertEquals(2, alimento.getStock());
         verify(productoRepository).save(collar);
         verify(productoRepository).save(alimento);
+    }
+
+    @Test
+    @DisplayName("Si el segundo producto no tiene stock, el primero conserva sus existencias")
+    void realizarVenta_segundoProductoSinStock_noDescuentaPrimero() {
+        alimento.setStock(0);
+        simularUsuario();
+        when(productoRepository.findAllById(List.of(10L, 20L))).thenReturn(List.of(collar, alimento));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> ventaService.realizarVenta(1L, List.of(10L, 20L)));
+
+        assertEquals(5, collar.getStock());
+        assertEquals(0, alimento.getStock());
+        verify(productoRepository, never()).save(any());
+        verify(ventaRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Un producto con stock nulo impide la venta y cualquier descuento")
+    void realizarVenta_stockNulo_lanzaError() {
+        collar.setStock(null);
+        simularUsuario();
+        when(productoRepository.findAllById(List.of(10L, 20L))).thenReturn(List.of(collar, alimento));
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> ventaService.realizarVenta(1L, List.of(10L, 20L)));
+
+        assertTrue(error.getMessage().contains("no tiene stock disponible"));
+        verify(productoRepository, never()).save(any());
+        verify(ventaRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Consultar venta existente verifica la propiedad")
+    void obtenerVentaPorId_existe_verificaPropietario() {
+        Venta venta = Venta.builder().id(5L).usuario(usuario).build();
+        when(ventaRepository.findById(5L)).thenReturn(Optional.of(venta));
+        assertTrue(ventaService.obtenerVentaPorId(5L).isPresent());
+        verify(autorizacionService).verificarPropietarioOAdmin(1L);
+    }
+
+    @Test
+    @DisplayName("Consultar venta inexistente devuelve vacio")
+    void obtenerVentaPorId_noExiste_devuelveVacio() {
+        when(ventaRepository.findById(99L)).thenReturn(Optional.empty());
+        assertTrue(ventaService.obtenerVentaPorId(99L).isEmpty());
+        verify(autorizacionService, never()).verificarPropietarioOAdmin(any());
+    }
+
+    @Test
+    @DisplayName("Listar ventas de usuario verifica la propiedad")
+    void listarVentasPorUsuario_devuelveLasVentasDelUsuario() {
+        when(ventaRepository.findByUsuarioId(1L)).thenReturn(List.of(new Venta(), new Venta()));
+        assertEquals(2, ventaService.listarVentasPorUsuario(1L).size());
+        verify(autorizacionService).verificarPropietarioOAdmin(1L);
+        verify(ventaRepository).findByUsuarioId(1L);
+    }
+
+    @Test
+    @DisplayName("ADMIN puede listar todas las ventas")
+    void listarTodasLasVentas_admin_devuelveTodas() {
+        usuario.setRol(Rol.ADMIN);
+        when(autorizacionService.obtenerUsuarioAutenticado()).thenReturn(usuario);
+        when(ventaRepository.findAll()).thenReturn(List.of(new Venta()));
+        assertEquals(1, ventaService.listarTodasLasVentas().size());
+        verify(ventaRepository).findAll();
+    }
+
+    @Test
+    @DisplayName("CLIENTE no puede listar todas las ventas")
+    void listarTodasLasVentas_cliente_lanzaAccesoDenegado() {
+        when(autorizacionService.obtenerUsuarioAutenticado()).thenReturn(usuario);
+        assertThrows(AccessDeniedException.class, () -> ventaService.listarTodasLasVentas());
+        verify(ventaRepository, never()).findAll();
+    }
+
+    @Test
+    @DisplayName("Los productos de una venta conservan su proveedor")
+    void realizarVenta_datosValidos_productosConservanSuProveedor() {
+        Proveedor vetSupply = Proveedor.builder().id(1L).nombre("VetSupply").build();
+        Proveedor petFood = Proveedor.builder().id(2L).nombre("PetFood").build();
+        collar.setProveedor(vetSupply);
+        alimento.setProveedor(petFood);
+        simularUsuario();
+        simularProductosYGuardado();
+
+        Venta venta = ventaService.realizarVenta(1L, List.of(10L, 20L));
+
+        assertEquals(vetSupply, venta.getProductos().get(0).getProveedor());
+        assertEquals(petFood, venta.getProductos().get(1).getProveedor());
     }
 }

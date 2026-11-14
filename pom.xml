@@ -163,6 +163,32 @@
 							<goal>report</goal>
 						</goals>
 					</execution>
+					<execution>
+						<id>check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>CLASS</element>
+									<!-- Funcionalidades de usuarios y ventas: minimo 80% -->
+									<includes>
+										<include>com.petsalud.backendpetsalud.service.VentaServiceImpl</include>
+										<include>com.petsalud.backendpetsalud.service.UsuarioServiceImpl</include>
+									</includes>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.80</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 		</plugins>
