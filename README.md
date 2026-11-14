@@ -15,6 +15,61 @@ API REST con Spring Boot 3, Spring Security con autenticación JWT (stateless), 
 
 Resultado: **97 pruebas automáticas sin fallos** (42 nuevas) y 23 pruebas manuales contra la API con base de datos real (`docs/semana3/evidencias/`).
 
+## Novedades de la Semana 4 (rama `semana4-pruebas`): pruebas unitarias
+
+| Requerimiento | Qué se agregó | Dónde |
+|---|---|---|
+| Gestión de ventas | Solo se registra una venta si **todos** los productos tienen stock (un stock nulo cuenta como sin stock); el stock se descuenta únicamente cuando la venta completa es válida. El total es la suma de los precios | `VentaServiceImpl` |
+| Validación de usuarios | El usuario titular de la venta debe tener nombre, apellido, email y dirección, y rol `ADMIN` o `CLIENTE` (un `VETERINARIO` recibe acceso denegado) | `VentaServiceImpl` |
+| Relación Producto-Proveedor | Nueva entidad `Proveedor` y relación `@ManyToOne` desde `Producto` | `Proveedor`, `Producto` |
+| Simulación de dependencias | Mockito reemplaza los repositorios y `AutorizacionService`; no se usa MySQL | `VentaServiceImplTest`, `UsuarioServiceImplTest` |
+| Cobertura | JaCoCo genera el informe y `verify` falla si `VentaServiceImpl` o `UsuarioServiceImpl` bajan de 80 % de líneas | `pom.xml` |
+
+Herramientas: JUnit 5, Mockito (ambas incluidas en `spring-boot-starter-test`, versiones administradas por Spring Boot) y JaCoCo 0.8.12.
+
+### Cómo ejecutar las pruebas de la Semana 4
+
+Solo las pruebas unitarias (no necesitan MySQL ni variables de entorno):
+
+```powershell
+.\mvnw.cmd test "-Dtest=VentaServiceImplTest,UsuarioServiceImplTest,UsuarioTest,VentaControllerTest"
+```
+
+Suite sin la prueba de contexto (ejecucion parcial), con comprobacion JaCoCo del 80 %:
+
+```powershell
+.\mvnw.cmd verify "-Dtest=!BackendpetsaludApplicationTests"
+```
+
+Suite completa con comprobacion JaCoCo del 80 % (la prueba de contexto usa H2; no requiere servidor MySQL durante las pruebas, aunque pueden necesitarse variables de entorno de seguridad):
+```powershell
+.\mvnw.cmd verify
+```
+
+
+El informe de cobertura queda en `target/site/jacoco/index.html`.
+
+### Registro tecnico de pruebas y cobertura
+
+El inventario detallado de las pruebas, sus escenarios, resultados y porcentajes de cobertura se encuentra en [Registro de pruebas y cobertura - Semana 4](docs/semana4/Registro_Pruebas_Cobertura_S4.md).
+
+El documento consolida 19 pruebas unitarias de Venta, 11 de Usuario y 1 prueba de integracion de rollback con H2. Tambien incluye las mediciones historicas y finales de JaCoCo y las referencias a las evidencias. Estas 31 pruebas forman parte de la bateria completa de 133 pruebas aprobadas; el registro no las presenta a todas como nuevas.
+
+### Integridad transaccional de ventas
+
+El metodo `realizarVenta()` de `VentaServiceImpl` utiliza `@Transactional` para revertir los cambios de stock si ocurre una excepcion durante la operacion. Antes de descontar existencias, comprueba que todos los productos tengan stock disponible, considerando `null` como stock no disponible.
+
+La prueba de regresion `realizarVenta_segundoProductoSinStock_noDescuentaPrimero` comprueba que un producto sin stock impida descontar los anteriores. La prueba `realizarVenta_stockNulo_lanzaError` verifica el rechazo del stock nulo sin guardar descuentos ni ventas.
+
+La prueba de integracion `VentaRollbackIntegrationTest`, mediante `errorAlGuardarVenta_revierteDescuentosEnBaseDeDatos`, utiliza una base H2 aislada y simula un fallo al guardar la venta. Se verifico que las existencias de los dos productos vuelven a sus valores iniciales (5 y 3). Esta comprobacion no necesita MySQL.
+
+| Clase de prueba | Qué comprueba |
+|---|---|
+| `VentaServiceImplTest` | Total de la venta, stock insuficiente o nulo (sin descontar stock de ningún producto), datos incompletos del usuario, roles permitidos y no permitidos, relación Venta-Usuario, Venta-Producto y Producto-Proveedor, y las consultas de ventas |
+| `UsuarioServiceImplTest` | Registro (clave cifrada y rol `CLIENTE`), email repetido, actualización sin cambiar email ni clave, consulta, listado y eliminación |
+| `UsuarioTest` | Construcción y comparación de la entidad `Usuario` |
+| `VentaControllerTest` | Códigos HTTP y JSON del endpoint `/api/ventas` con el servicio simulado |
+
 ## 1. Requisitos
 
 | Herramienta | Detalle |
@@ -250,6 +305,20 @@ La autorización tiene tres capas:
 Desde la Semana 3, eliminar un expediente médico (`DELETE /api/expedientes/{id}`) es solo para ADMIN.
 
 
+### Decisión de diseño: nombres de roles
+
+Los nombres de los roles en el código no coinciden con los del negocio. Se mantuvieron por compatibilidad con los datos y los tokens ya existentes, y la equivalencia queda documentada aquí y en `ReglasAcceso`:
+
+| Rol en el código | Rol en el negocio | Alcance |
+|---|---|---|
+| `CLIENTE` | Cliente | Solo sus propios recursos (mascotas, citas, ventas, notificaciones y recompensas) |
+| `VETERINARIO` | Empleado | Atención de citas y expedientes; consulta de productos y de datos de clientes |
+| `ADMIN` | Gerente | Gestión completa del sistema |
+
+En `ReglasAcceso`, `PERSONAL` equivale a empleado o gerente y `GERENTE` equivale a `ADMIN`.
+
+Si en el futuro se decide renombrar los roles, la migración controlada sería: (1) agregar los nombres nuevos al enum `Rol` y aceptar ambos temporalmente; (2) actualizar con SQL la columna `rol` de la tabla `usuarios`; (3) esperar a que expiren los tokens vigentes (duran 15 minutos) o invalidarlos; (4) actualizar `@PreAuthorize`, `SecurityConfig` y las pruebas, y retirar los nombres antiguos.
+
 ## 7. Pruebas automatizadas
 
 El proyecto incluye pruebas automatizadas de autorización en servicios, validación JWT, autenticación y autorización HTTP, además del bloqueo de intentos de inicio de sesión. Para ejecutar un subconjunto de las pruebas de seguridad, utiliza:
@@ -259,6 +328,8 @@ El proyecto incluye pruebas automatizadas de autorización en servicios, validac
 ```
 
 Para ejecutar la suite completa, utiliza `.\mvnw.cmd test`. Con la Semana 3 la suite tiene **97 pruebas, sin fallos, errores ni pruebas omitidas, con resultado BUILD SUCCESS** (en la Semana 2 eran 55).
+
+Con la Semana 4, la suite completa suma **133 pruebas** (36 adicionales respecto de las 97 documentadas en Semana 3), con **0 fallos, 0 errores y 0 omitidas**. La ejecucion limpia de `mvn verify` finalizo con **BUILD SUCCESS** y **All coverage checks have been met**. Cobertura JaCoCo de lineas: `VentaServiceImpl` **98,0 % (49/50)** y `UsuarioServiceImpl` **100,0 % (19/19)**; cobertura de ramas: **96,4 %** y **100,0 %**, respectivamente. Ambas clases superan el minimo obligatorio de **80 % de lineas**. En esta rama, `BackendpetsaludApplicationTests` utiliza H2 aislado, por lo que las pruebas automatizadas no requieren MySQL; la ejecucion normal de la API si requiere la base de datos configurada.
 
 Pruebas nuevas de la Semana 3:
 
@@ -284,7 +355,8 @@ Solo las pruebas de la Semana 3 (no necesitan MySQL):
 - **JWT sin revocación ni refresh:** un token es válido hasta que expira (15 minutos); no hay lista de tokens revocados ni token de refresco.
 - **Bloqueo en memoria:** el contador de intentos fallidos no se comparte entre varias instancias ni sobrevive a un reinicio. La combinación de correo + IP reduce el riesgo de bloqueo provocado desde otra IP, pero un atacante puede distribuir intentos entre distintas IP. Detrás de un proxy, debe configurarse correctamente la identificación de la IP del cliente.
 - **Monitoreo en memoria:** el conteo de solicitudes por IP también vive en memoria. En producción, el archivo `logs/petsalud.log` debería enviarse a un sistema de monitoreo (IDS/IPS o SIEM).
-- **Pruebas:** el proyecto cuenta con 97 pruebas automatizadas aprobadas que incluyen validación de JWT, autenticación, autorización por roles, controles de los servicios y bloqueo de intentos de inicio de sesión. Las verificaciones manuales con Postman complementan esta cobertura, pero no se ha comprobado exhaustivamente el funcionamiento de todos los endpoints y escenarios posibles.
+- **Proveedores:** la entidad `Proveedor` y su relación con `Producto` existen, pero todavía no hay endpoints para crearlos o asignarlos, y la venta no exige que el producto tenga proveedor.
+- **Pruebas:** hasta la Semana 3 el proyecto contaba con 97 pruebas automatizadas aprobadas que incluyen validación de JWT, autenticación, autorización por roles, controles de los servicios y bloqueo de intentos de inicio de sesión. Las verificaciones manuales con Postman complementan esta cobertura, pero no se ha comprobado exhaustivamente el funcionamiento de todos los endpoints y escenarios posibles.
 
 ## 9. Monitoreo de actividad sospechosa (Semana 3)
 
