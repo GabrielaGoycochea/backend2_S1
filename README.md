@@ -15,6 +15,23 @@ API REST con Spring Boot 3, Spring Security con autenticación JWT (stateless), 
 
 Resultado: **97 pruebas automáticas sin fallos** (42 nuevas) y 23 pruebas manuales contra la API con base de datos real (`docs/semana3/evidencias/`).
 
+## Novedades de la Semana 5 (rama `semana5-pruebas`): citas, usuarios y mascotas
+
+| Requerimiento | Qué se agregó | Dónde |
+|---|---|---|
+| Cita con estado inicial | Toda cita nueva queda con estado `Agendada` | `CitaServiceImpl` |
+| Horario ocupado | No se agenda una cita si el veterinario ya tiene una en esa fecha y hora (las canceladas no cuentan) | `CitaServiceImpl`, `CitaRepository` |
+| Relación mascota-veterinario | La mascota debe tener propietario registrado y el usuario asignado debe tener rol `VETERINARIO` | `CitaServiceImpl` |
+| Datos del usuario | Pruebas de email y nombre (restricciones del DTO de registro) y de los roles `CLIENTE`, `VETERINARIO` y `ADMIN` | `UsuarioDatosValidosTest` |
+| Relación usuario-mascota | Un `CLIENTE` con lista de mascotas; nombre y especie válidos | `UsuarioMascotaRelacionTest`, `MascotaServiceImplTest` |
+| Cobertura | La regla de JaCoCo (80 % de líneas) ahora incluye también `CitaServiceImpl` y `MascotaServiceImpl` | `pom.xml` |
+
+Las pruebas nuevas usan Mockito (sin MySQL) y están en `CitaServiceImplTest`, `MascotaServiceImplTest`, `UsuarioDatosValidosTest` y `UsuarioMascotaRelacionTest`. Se ejecutan con:
+
+```powershell
+.\mvnw.cmd verify
+```
+
 ## Novedades de la Semana 4 (rama `semana4-pruebas`): pruebas unitarias
 
 | Requerimiento | Qué se agregó | Dónde |

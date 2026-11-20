@@ -159,4 +159,19 @@ class UsuarioServiceImplTest {
         assertTrue(resultado.isEmpty());
         verify(usuarioRepository).findAll();
     }
+
+    @Test
+    @DisplayName("Si el registro llega sin rol, el usuario queda igualmente con rol CLIENTE")
+    void registrarUsuario_sinRol_asignaCliente() {
+        Usuario usuario = nuevoUsuario();
+        usuario.setRol(null);
+        when(usuarioRepository.findByEmail("nuevo@petsalud.cl")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("clave123")).thenReturn("hash_simulado");
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
+
+        Usuario resultado = usuarioService.registrarUsuario(usuario);
+
+        assertNotNull(resultado.getRol());
+        assertEquals(Rol.CLIENTE, resultado.getRol());
+    }
 }
