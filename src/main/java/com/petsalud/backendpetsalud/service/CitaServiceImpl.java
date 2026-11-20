@@ -3,6 +3,7 @@ package com.petsalud.backendpetsalud.service;
 import com.petsalud.backendpetsalud.entity.Cita;
 import com.petsalud.backendpetsalud.security.AutorizacionService;
 import com.petsalud.backendpetsalud.entity.Mascota;
+import com.petsalud.backendpetsalud.entity.Rol;
 import com.petsalud.backendpetsalud.entity.Usuario;
 import com.petsalud.backendpetsalud.repository.CitaRepository;
 import com.petsalud.backendpetsalud.repository.MascotaRepository;
@@ -35,14 +36,27 @@ public class CitaServiceImpl implements CitaService {
         Mascota mascota = mascotaRepository.findById(mascotaId)
                 .orElseThrow(() -> new IllegalArgumentException("Mascota no encontrada"));
 
-        autorizacionService.verificarPropietarioOAdmin(
-                mascota.getPropietario().getId()
-        );
+        // S5 La mascota debe tener un propietario registrado
+        Usuario propietario = mascota.getPropietario();
+        if (propietario == null || propietario.getId() == null) {
+            throw new IllegalArgumentException("La mascota no tiene un propietario registrado");
+        }
+
+        autorizacionService.verificarPropietarioOAdmin(propietario.getId());
 
         Usuario veterinario = usuarioRepository.findById(veterinarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Veterinario no encontrado"));
 
-        // Opcional: Verificar disponibilidad del veterinario en ese horario
+        // S5 El usuario asignado debe ser realmente un veterinario
+        if 
+        (veterinario.getRol() != Rol.VETERINARIO) {
+            throw new IllegalArgumentException("El usuario indicado no es un veterinario");
+        }
+
+        // S5 No se puede agendar en un horario ya ocupado por el veterinario
+        if (citaRepository.existsByVeterinarioIdAndFechaHoraAndEstadoNot(veterinarioId, fechaHora, "Cancelada")) {
+            throw new IllegalArgumentException("El veterinario ya tiene una cita agendada en ese horario");
+        }
 
         Cita cita = Cita.builder()
                 .mascota(mascota)

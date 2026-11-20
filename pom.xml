@@ -173,10 +173,12 @@
 							<rules>
 								<rule>
 									<element>CLASS</element>
-									<!-- Funcionalidades de usuarios y ventas: minimo 80% -->
+									<!-- Funcionalidades de usuarios, ventas, citas y mascotas: minimo 80% -->
 									<includes>
 										<include>com.petsalud.backendpetsalud.service.VentaServiceImpl</include>
 										<include>com.petsalud.backendpetsalud.service.UsuarioServiceImpl</include>
+										<include>com.petsalud.backendpetsalud.service.CitaServiceImpl</include>
+										<include>com.petsalud.backendpetsalud.service.MascotaServiceImpl</include>
 									</includes>
 									<limits>
 										<limit>
