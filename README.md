@@ -34,6 +34,25 @@ Límite conocido: la disponibilidad compara la fecha y hora exactas (el modelo n
 
 Cancelación actual: `cancelarCita()` elimina el registro mediante `deleteById`; en cambio, una cita que cambia al estado `Cancelada` mediante `actualizarEstadoCita()` permanece registrada y no bloquea el horario. Por tanto, el endpoint DELETE no conserva el historial de esa cita.
 
+### Capa web y retroalimentación de la Semana 4 (rama `semana5-jorge-controladores`)
+
+| Recomendación o hallazgo | Qué se agregó | Dónde |
+|---|---|---|
+| Pruebas de `UsuarioController` con `@WebMvcTest` | 16 pruebas con la seguridad real: registro (200 y 400), consultas (200, 404, 401 y 403), actualización (200, 400, 404 y 403) y eliminación (204 y 403) | `UsuarioControllerTest` |
+| `VentaController` con pocas pruebas | 3 pruebas de endpoints y 4 de permisos (401, 403 por `@PreAuthorize`, 403 por la regla de la Semana 4 y 200) | `VentaControllerTest`, `VentaControllerSeguridadTest` |
+| Controladores en la regla de JaCoCo | `UsuarioController` y `VentaController` (ambos en 100 % de líneas) | `pom.xml` |
+| PUT de un usuario inexistente respondía 400 | Responde 404, igual que GET. `RecursoNoEncontradoException` extiende `IllegalArgumentException` y el manejador global la traduce a 404 | `RecursoNoEncontradoException`, `GlobalExceptionHandler`, `UsuarioServiceImpl` |
+| `StackOverflowError` en `toString` y `hashCode` de usuarios con mascotas (Lombok `@Data` en relaciones bidireccionales) | Listas inversas fuera de `toString`, `equals` y `hashCode`; la contraseña tampoco aparece en `toString` | `Usuario`, `Mascota`, `RelacionesBidireccionalesTest` |
+| Integración continua | GitHub Actions ejecuta `mvnw verify` en cada push y pull request y publica los reportes | `.github/workflows/pruebas-backend.yml` |
+
+Las pruebas que levantan el contexto (`contextLoads` y el rollback con H2) necesitan `JWT_SECRET` en **Base64**; con un texto cualquiera fallan al crear `JwtUtil`. Para generar una clave local en PowerShell:
+
+```powershell
+$env:JWT_SECRET = [Convert]::ToBase64String([byte[]](1..48 | ForEach-Object { Get-Random -Maximum 256 }))
+```
+
+Mejora planificada para la evaluación sumativa, como sugirió el profesor: control de concurrencia con `@Version` en `Producto` y una prueba de integración con dos ventas simultáneas del último producto. El mismo riesgo existe al agendar dos citas al mismo veterinario a la misma hora; ahí se resolvería con un índice único (veterinario, fecha y hora).
+
 ```powershell
 .\mvnw.cmd verify
 ```
@@ -374,7 +393,7 @@ Solo las pruebas de la Semana 3 (no necesitan MySQL):
 ## 8. Limitaciones conocidas
 
 - **CSRF desactivado:** la credencial viaja solo en el header `Authorization`, que el navegador no agrega por su cuenta, y la API no usa cookies ni sesión. Se complementa con CORS restringido a `cors.allowed-origins`. Si algún día el token se guarda en una cookie, hay que reactivar CSRF.
-- **Citas:** el veterinario asignado no se valida contra su rol, y el estado de una cita solo se valida como texto (letras, 3 a 20 caracteres), no contra una lista cerrada. El veterinario tampoco agenda citas (las agenda el cliente o el ADMIN).
+- **Citas:** desde la Semana 5 el veterinario asignado se valida contra su rol, pero el estado de una cita solo se valida como texto (letras, 3 a 20 caracteres), no contra una lista cerrada. El veterinario tampoco agenda citas (las agenda el cliente o el ADMIN).
 - **JWT sin revocación ni refresh:** un token es válido hasta que expira (15 minutos); no hay lista de tokens revocados ni token de refresco.
 - **Bloqueo en memoria:** el contador de intentos fallidos no se comparte entre varias instancias ni sobrevive a un reinicio. La combinación de correo + IP reduce el riesgo de bloqueo provocado desde otra IP, pero un atacante puede distribuir intentos entre distintas IP. Detrás de un proxy, debe configurarse correctamente la identificación de la IP del cliente.
 - **Monitoreo en memoria:** el conteo de solicitudes por IP también vive en memoria. En producción, el archivo `logs/petsalud.log` debería enviarse a un sistema de monitoreo (IDS/IPS o SIEM).
