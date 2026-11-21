@@ -2,6 +2,7 @@ package com.petsalud.backendpetsalud.service;
 
 import com.petsalud.backendpetsalud.entity.Rol;
 import com.petsalud.backendpetsalud.entity.Usuario;
+import com.petsalud.backendpetsalud.exception.RecursoNoEncontradoException;
 import com.petsalud.backendpetsalud.repository.UsuarioRepository;
 import com.petsalud.backendpetsalud.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,7 +54,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             usuario.setDireccion(usuarioActualizado.getDireccion());
             // No actualizar email ni password aquí por seguridad
             return usuarioRepository.save(usuario);
-        }).orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+        }).orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado")); // S5: 404
     }
 
     @Override
