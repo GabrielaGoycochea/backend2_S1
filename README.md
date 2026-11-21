@@ -15,18 +15,24 @@ API REST con Spring Boot 3, Spring Security con autenticación JWT (stateless), 
 
 Resultado: **97 pruebas automáticas sin fallos** (42 nuevas) y 23 pruebas manuales contra la API con base de datos real (`docs/semana3/evidencias/`).
 
-## Novedades de la Semana 5 (rama `semana5-pruebas`): citas, usuarios y mascotas
+## Novedades de la Semana 5 (ramas `Semana5-Backend2-gaby` y `Semana5_Monica_PruebasUnitarias`): citas, usuarios y mascotas
 
 | Requerimiento | Qué se agregó | Dónde |
 |---|---|---|
 | Cita con estado inicial | Toda cita nueva queda con estado `Agendada` | `CitaServiceImpl` |
-| Horario ocupado | No se agenda una cita si el veterinario ya tiene una en esa fecha y hora (las canceladas no cuentan) | `CitaServiceImpl`, `CitaRepository` |
-| Relación mascota-veterinario | La mascota debe tener propietario registrado y el usuario asignado debe tener rol `VETERINARIO` | `CitaServiceImpl` |
-| Datos del usuario | Pruebas de email y nombre (restricciones del DTO de registro) y de los roles `CLIENTE`, `VETERINARIO` y `ADMIN` | `UsuarioDatosValidosTest` |
-| Relación usuario-mascota | Un `CLIENTE` con lista de mascotas; nombre y especie válidos | `UsuarioMascotaRelacionTest`, `MascotaServiceImplTest` |
-| Cobertura | La regla de JaCoCo (80 % de líneas) ahora incluye también `CitaServiceImpl` y `MascotaServiceImpl` | `pom.xml` |
+| Horario ocupado | No se agenda una cita si el veterinario ya tiene otra en esa misma fecha y hora (las canceladas no cuentan) | `CitaServiceImpl`, `CitaRepository` |
+| Relación mascota-veterinario | La mascota debe tener propietario registrado (error claro en lugar de un error 500) y el usuario asignado debe tener rol `VETERINARIO` | `CitaServiceImpl`, `MascotaServiceImpl` |
+| Datos del usuario | Email y nombre obligatorios y con formato válido; el registro público siempre asigna rol `CLIENTE`; la base de datos exige rol y email único | `UsuarioDatosValidosTest`, `UsuarioServiceImplTest`, `UsuarioRepositoryRestriccionesIntegrationTest` |
+| Relación usuario-mascota | Un `CLIENTE` tiene su lista de mascotas guardada en la base; nombre y especie de la mascota válidos | `MascotaRepositoryRelacionIntegrationTest`, `MascotaRequestValidacionTest`, `MascotaServiceImplTest` |
+| Cobertura | La regla de JaCoCo (80 % de líneas por clase) ahora incluye también `CitaServiceImpl` y `MascotaServiceImpl` | `pom.xml` |
 
-Las pruebas nuevas usan Mockito (sin MySQL) y están en `CitaServiceImplTest`, `MascotaServiceImplTest`, `UsuarioDatosValidosTest` y `UsuarioMascotaRelacionTest`. Se ejecutan con:
+Pruebas unitarias con Mockito y Bean Validation (sin base de datos): `CitaServiceImplTest`, `MascotaServiceImplTest`, `UsuarioServiceImplTest`, `UsuarioDatosValidosTest` y `MascotaRequestValidacionTest`.
+
+Pruebas de integración con JPA y H2 (sin mocks de repositorio): `CitaRepositoryDisponibilidadIntegrationTest`, `CitaAgendamientoIntegrationTest`, `MascotaRepositoryRelacionIntegrationTest` y `UsuarioRepositoryRestriccionesIntegrationTest`.
+
+Límite conocido: la disponibilidad compara la fecha y hora exactas (el modelo no registra la duración de una cita).
+
+Cancelación actual: `cancelarCita()` elimina el registro mediante `deleteById`; en cambio, una cita que cambia al estado `Cancelada` mediante `actualizarEstadoCita()` permanece registrada y no bloquea el horario. Por tanto, el endpoint DELETE no conserva el historial de esa cita.
 
 ```powershell
 .\mvnw.cmd verify
