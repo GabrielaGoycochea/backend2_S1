@@ -40,8 +40,7 @@ public class MascotaServiceImpl implements MascotaService {
         Optional<Mascota> mascota = mascotaRepository.findById(id);
 
         mascota.ifPresent(m ->
-                autorizacionService.verificarPersonalOPropietario(
-                        m.getPropietario().getId()));
+                autorizacionService.verificarPersonalOPropietario(propietarioIdDe(m)));
 
         return mascota;
     }
@@ -49,8 +48,7 @@ public class MascotaServiceImpl implements MascotaService {
     @Override
     public Mascota actualizarMascota(Long id, Mascota mascotaActualizada) {
         return mascotaRepository.findById(id).map(mascota -> {
-            autorizacionService.verificarPropietarioOAdmin(
-                    mascota.getPropietario().getId());
+            autorizacionService.verificarPropietarioOAdmin(propietarioIdDe(mascota));
 
             mascota.setNombre(mascotaActualizada.getNombre());
             mascota.setEspecie(mascotaActualizada.getEspecie());
@@ -69,8 +67,7 @@ public class MascotaServiceImpl implements MascotaService {
                 .orElseThrow(() ->
                         new IllegalArgumentException("Mascota no encontrada"));
 
-        autorizacionService.verificarPropietarioOAdmin(
-                mascota.getPropietario().getId());
+        autorizacionService.verificarPropietarioOAdmin(propietarioIdDe(mascota));
 
         mascotaRepository.delete(mascota);
     }
@@ -79,5 +76,14 @@ public class MascotaServiceImpl implements MascotaService {
     public List<Mascota> listarMascotasPorPropietario(Long propietarioId) {
         autorizacionService.verificarPersonalOPropietario(propietarioId);
         return mascotaRepository.findByPropietarioId(propietarioId);
+    }
+
+    // S5 Evita un NullPointerException (error 500) cuando la mascota no tiene propietario registrado
+    private Long propietarioIdDe(Mascota mascota) {
+        Usuario propietario = mascota.getPropietario();
+        if (propietario == null || propietario.getId() == null) {
+            throw new IllegalArgumentException("La mascota no tiene un propietario registrado");
+        }
+        return propietario.getId();
     }
 }
