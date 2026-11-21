@@ -12,6 +12,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,7 +28,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * S5: pruebas unitarias de las citas (creacion, disponibilidad, estado y relacion mascota-veterinario).
+ * S5: pruebas unitarias de las citas (creacion, disponibilidad, estado, cancelacion
+ * y relacion mascota-propietario-veterinario).
  * Los repositorios y la autorizacion se simulan con Mockito (no se usa MySQL).
  */
 @ExtendWith(MockitoExtension.class)
@@ -52,12 +55,13 @@ class CitaServiceImplTest {
         veterinario = Usuario.builder().id(5L).email("vet@petsalud.cl").nombre("Luis").rol(Rol.VETERINARIO).build();
         admin = Usuario.builder().id(1L).email("admin@petsalud.cl").nombre("Admin").rol(Rol.ADMIN).build();
         mascota = Mascota.builder().id(1L).nombre("Firulais").especie("Perro").propietario(propietario).build();
-        fecha = LocalDateTime.of(2026, 11, 20, 10, 0);
+        fecha = LocalDateTime.of(2030, 1, 15, 10, 0); // fecha futura fija: resultados reproducibles
     }
 
     private void simularAgendamientoValido() {
         when(mascotaRepository.findById(1L)).thenReturn(Optional.of(mascota));
         when(usuarioRepository.findById(5L)).thenReturn(Optional.of(veterinario));
+        when(citaRepository.existsByVeterinarioIdAndFechaHoraAndEstadoNot(5L, fecha, "Cancelada")).thenReturn(false);
         when(citaRepository.save(any(Cita.class))).thenAnswer(i -> i.getArgument(0));
     }
 
@@ -129,14 +133,12 @@ class CitaServiceImplTest {
     }
 
     @Test
-    @DisplayName("La mascota de la cita tiene un propietario registrado y se verifica su autorizacion")
-    void agendarCita_datosValidos_mascotaConPropietarioRegistrado() {
+    @DisplayName("Al agendar se verifica que el usuario autenticado sea el propietario de la mascota o un ADMIN")
+    void agendarCita_datosValidos_verificaAutorizacionDelPropietario() {
         simularAgendamientoValido();
 
-        Cita resultado = citaService.agendarCita(1L, 5L, fecha, "Control anual");
+        citaService.agendarCita(1L, 5L, fecha, "Control anual");
 
-        assertNotNull(resultado.getMascota().getPropietario());
-        assertEquals(3L, resultado.getMascota().getPropietario().getId());
         verify(autorizacionService).verificarPropietarioOAdmin(3L);
     }
 
@@ -165,10 +167,10 @@ class CitaServiceImplTest {
         verify(citaRepository, never()).save(any());
     }
 
-    @Test
-    @DisplayName("El usuario asignado a la cita debe tener rol VETERINARIO")
-    void agendarCita_usuarioQueNoEsVeterinario_lanzaError() {
-        veterinario.setRol(Rol.CLIENTE);
+    @ParameterizedTest(name = "Un usuario con rol {0} no puede ser asignado como veterinario")
+    @EnumSource(value = Rol.class, names = {"CLIENTE", "ADMIN"})
+    void agendarCita_usuarioQueNoEsVeterinario_lanzaError(Rol rol) {
+        veterinario.setRol(rol);
         when(mascotaRepository.findById(1L)).thenReturn(Optional.of(mascota));
         when(usuarioRepository.findById(5L)).thenReturn(Optional.of(veterinario));
 
@@ -284,6 +286,29 @@ class CitaServiceImplTest {
 
         verify(autorizacionService).verificarPropietarioOAdmin(3L);
         verify(citaRepository).deleteById(1L);
+    }
+
+    @Test
+    @DisplayName("Cancelar una cita cuya mascota no tiene propietario lanza un error claro")
+    void cancelarCita_mascotaSinPropietario_lanzaError() {
+        mascota.setPropietario(null);
+        when(citaRepository.findById(1L)).thenReturn(Optional.of(cita(1L, veterinario)));
+
+        assertThrows(IllegalArgumentException.class, () -> citaService.cancelarCita(1L));
+
+        verifyNoInteractions(autorizacionService);
+        verify(citaRepository, never()).deleteById(any());
+    }
+
+    @Test
+    @DisplayName("Cancelar una cita sin mascota asociada lanza un error claro")
+    void cancelarCita_citaSinMascota_lanzaError() {
+        Cita sinMascota = Cita.builder().id(1L).veterinario(veterinario).fechaHora(fecha).estado("Agendada").build();
+        when(citaRepository.findById(1L)).thenReturn(Optional.of(sinMascota));
+
+        assertThrows(IllegalArgumentException.class, () -> citaService.cancelarCita(1L));
+
+        verify(citaRepository, never()).deleteById(any());
     }
 
     @Test

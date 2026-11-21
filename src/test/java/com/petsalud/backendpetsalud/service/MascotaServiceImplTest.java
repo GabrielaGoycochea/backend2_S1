@@ -22,7 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * S5: pruebas unitarias de las mascotas y de su relacion con el usuario propietario.
+ * S5: pruebas unitarias del servicio de mascotas y de su asociacion con el propietario.
  * Los repositorios y la autorizacion se simulan con Mockito: no se usa MySQL.
  */
 @ExtendWith(MockitoExtension.class)
@@ -45,8 +45,8 @@ class MascotaServiceImplTest {
     }
 
     @Test
-    @DisplayName("Registrar una mascota la asocia al usuario CLIENTE propietario")
-    void registrarMascota_propietarioCliente_asociaPropietario() {
+    @DisplayName("Registrar una mascota la asocia a su propietario")
+    void registrarMascota_propietarioExistente_asociaPropietario() {
         Mascota nueva = Mascota.builder().nombre("Michi").especie("Gato").build();
         when(usuarioRepository.findById(3L)).thenReturn(Optional.of(cliente));
         when(mascotaRepository.save(any(Mascota.class))).thenAnswer(i -> i.getArgument(0));
@@ -54,7 +54,6 @@ class MascotaServiceImplTest {
         Mascota resultado = mascotaService.registrarMascota(nueva, 3L);
 
         assertSame(cliente, resultado.getPropietario());
-        assertEquals(Rol.CLIENTE, resultado.getPropietario().getRol());
         verify(autorizacionService).verificarPersonalOPropietario(3L);
         verify(mascotaRepository).save(nueva);
     }
@@ -84,6 +83,19 @@ class MascotaServiceImplTest {
         when(mascotaRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertTrue(mascotaService.obtenerMascotaPorId(99L).isEmpty());
+        verifyNoInteractions(autorizacionService);
+    }
+
+    @Test
+    @DisplayName("Consultar una mascota sin propietario registrado lanza un error claro y no un NullPointerException")
+    void obtenerMascotaPorId_sinPropietario_lanzaError() {
+        mascota.setPropietario(null);
+        when(mascotaRepository.findById(1L)).thenReturn(Optional.of(mascota));
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> mascotaService.obtenerMascotaPorId(1L));
+
+        assertTrue(error.getMessage().contains("propietario"));
         verifyNoInteractions(autorizacionService);
     }
 
@@ -135,15 +147,14 @@ class MascotaServiceImplTest {
     }
 
     @Test
-    @DisplayName("Un CLIENTE tiene una lista de mascotas asociadas")
-    void listarMascotasPorPropietario_cliente_devuelveSusMascotas() {
+    @DisplayName("Listar las mascotas de un propietario verifica el acceso y devuelve las del repositorio")
+    void listarMascotasPorPropietario_propietario_verificaAccesoYDevuelveSusMascotas() {
         Mascota segunda = Mascota.builder().id(2L).nombre("Michi").especie("Gato").propietario(cliente).build();
         when(mascotaRepository.findByPropietarioId(3L)).thenReturn(List.of(mascota, segunda));
 
         List<Mascota> resultado = mascotaService.listarMascotasPorPropietario(3L);
 
         assertEquals(2, resultado.size());
-        assertTrue(resultado.stream().allMatch(m -> m.getPropietario().getId().equals(3L)));
         verify(autorizacionService).verificarPersonalOPropietario(3L);
     }
 }

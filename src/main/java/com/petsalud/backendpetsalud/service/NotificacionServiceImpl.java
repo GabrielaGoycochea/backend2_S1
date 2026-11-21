@@ -1,4 +1,4 @@
- package com.petsalud.backendpetsalud.service;
+package com.petsalud.backendpetsalud.service;
 
 import com.petsalud.backendpetsalud.entity.Notificacion;
 import com.petsalud.backendpetsalud.entity.Usuario;
