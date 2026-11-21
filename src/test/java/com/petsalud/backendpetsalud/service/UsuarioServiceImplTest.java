@@ -6,6 +6,9 @@ import com.petsalud.backendpetsalud.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,10 +29,12 @@ class UsuarioServiceImplTest {
         return Usuario.builder().email("nuevo@petsalud.cl").password("clave123").nombre("Ana").apellido("Diaz").direccion("Calle 123").rol(Rol.ADMIN).build();
     }
 
-    @Test
-    @DisplayName("Registro publico asigna CLIENTE y codifica la contrasena")
-    void registrarUsuario_datosValidos_asignaClienteYCodificaPassword() {
+    @ParameterizedTest(name = "Registro publico con rol de entrada {0}: queda como CLIENTE y con contrasena codificada")
+    @NullSource
+    @EnumSource(value = Rol.class, names = {"ADMIN", "VETERINARIO"})
+    void registrarUsuario_cualquierRolDeEntrada_quedaComoClienteYCodificaPassword(Rol rolEntrada) {
         Usuario usuario = nuevoUsuario();
+        usuario.setRol(rolEntrada);
         when(usuarioRepository.findByEmail("nuevo@petsalud.cl")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("clave123")).thenReturn("hash_simulado");
         when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
@@ -158,20 +163,5 @@ class UsuarioServiceImplTest {
         assertNotNull(resultado);
         assertTrue(resultado.isEmpty());
         verify(usuarioRepository).findAll();
-    }
-
-    @Test
-    @DisplayName("Si el registro llega sin rol, el usuario queda igualmente con rol CLIENTE")
-    void registrarUsuario_sinRol_asignaCliente() {
-        Usuario usuario = nuevoUsuario();
-        usuario.setRol(null);
-        when(usuarioRepository.findByEmail("nuevo@petsalud.cl")).thenReturn(Optional.empty());
-        when(passwordEncoder.encode("clave123")).thenReturn("hash_simulado");
-        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
-
-        Usuario resultado = usuarioService.registrarUsuario(usuario);
-
-        assertNotNull(resultado.getRol());
-        assertEquals(Rol.CLIENTE, resultado.getRol());
     }
 }

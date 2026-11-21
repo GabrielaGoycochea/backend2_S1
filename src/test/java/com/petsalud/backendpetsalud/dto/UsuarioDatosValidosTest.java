@@ -1,6 +1,5 @@
-package com.petsalud.backendpetsalud.entity;
+package com.petsalud.backendpetsalud.dto;
 
-import com.petsalud.backendpetsalud.dto.RegistroUsuarioRequest;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeAll;
@@ -10,16 +9,17 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * S5 - Validacion de los datos del usuario (email, nombre y rol).
- * Email y nombre se validan con las restricciones del DTO de registro (el mismo que usa la API);
- * el rol se valida con el enum Rol (CLIENTE, VETERINARIO, ADMIN).
+ * S5 - Validacion de los datos del usuario: email y nombre obligatorios y con formato valido.
+ * Se validan las restricciones de RegistroUsuarioRequest, el DTO que usa la API para registrar usuarios.
+ * La validez del rol se prueba donde el sistema lo usa: UsuarioServiceImplTest (el registro siempre
+ * asigna CLIENTE), CitaServiceImplTest (solo un VETERINARIO atiende citas) y
+ * UsuarioRepositoryRestriccionesIntegrationTest (la base no acepta usuarios sin rol).
  */
 class UsuarioDatosValidosTest {
 
@@ -72,34 +72,5 @@ class UsuarioDatosValidosTest {
     @DisplayName("El nombre no admite caracteres de HTML")
     void nombre_conCaracteresPeligrosos_esInvalido() {
         assertTrue(camposInvalidos(registro("juan.perez@example.com", "Juan<script>")).contains("nombre"));
-    }
-
-    @Test
-    @DisplayName("Los roles validos del sistema son CLIENTE, VETERINARIO y ADMIN")
-    void rol_valoresDelSistema_sonLosTresEsperados() {
-        assertEquals(List.of(Rol.CLIENTE, Rol.VETERINARIO, Rol.ADMIN), List.of(Rol.values()));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"CLIENTE", "VETERINARIO", "ADMIN"})
-    @DisplayName("Los nombres CLIENTE, VETERINARIO y ADMIN se reconocen como roles validos")
-    void rol_nombreValido_seReconoce(String nombre) {
-        assertEquals(nombre, Rol.valueOf(nombre).name());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"GERENTE", "EMPLEADO", "cliente", "SUPERADMIN", ""})
-    @DisplayName("Un nombre que no es CLIENTE, VETERINARIO ni ADMIN no es un rol valido")
-    void rol_nombreInvalido_lanzaError(String nombre) {
-        assertThrows(IllegalArgumentException.class, () -> Rol.valueOf(nombre));
-    }
-
-    @Test
-    @DisplayName("Un usuario construido con rol conserva ese rol")
-    void usuario_conRol_conservaElRol() {
-        Usuario usuario = Usuario.builder().email("juan.perez@example.com").nombre("Juan").rol(Rol.VETERINARIO).build();
-
-        assertNotNull(usuario.getRol());
-        assertEquals(Rol.VETERINARIO, usuario.getRol());
     }
 }
