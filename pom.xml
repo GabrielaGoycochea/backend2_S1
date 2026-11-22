@@ -174,11 +174,14 @@
 								<rule>
 									<element>CLASS</element>
 									<!-- Funcionalidades de usuarios, ventas, citas y mascotas: minimo 80% -->
+									<!-- Semana 5 (retroalimentacion): tambien la capa web de usuarios y ventas -->
 									<includes>
 										<include>com.petsalud.backendpetsalud.service.VentaServiceImpl</include>
 										<include>com.petsalud.backendpetsalud.service.UsuarioServiceImpl</include>
 										<include>com.petsalud.backendpetsalud.service.CitaServiceImpl</include>
 										<include>com.petsalud.backendpetsalud.service.MascotaServiceImpl</include>
+										<include>com.petsalud.backendpetsalud.controller.UsuarioController</include>
+										<include>com.petsalud.backendpetsalud.controller.VentaController</include>
 									</includes>
 									<limits>
 										<limit>

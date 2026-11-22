@@ -2,6 +2,7 @@ package com.petsalud.backendpetsalud.service;
 
 import com.petsalud.backendpetsalud.entity.Rol;
 import com.petsalud.backendpetsalud.entity.Usuario;
+import com.petsalud.backendpetsalud.exception.RecursoNoEncontradoException;
 import com.petsalud.backendpetsalud.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -122,7 +123,8 @@ class UsuarioServiceImplTest {
     void actualizarUsuario_inexistente_lanzaExcepcion() {
         when(usuarioRepository.findById(99L)).thenReturn(Optional.empty());
 
-        IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> usuarioService.actualizarUsuario(99L, nuevoUsuario()));
+        // S5: RecursoNoEncontradoException (subclase de IllegalArgumentException) para que la API responda 404
+        RecursoNoEncontradoException error = assertThrows(RecursoNoEncontradoException.class, () -> usuarioService.actualizarUsuario(99L, nuevoUsuario()));
 
         assertEquals("Usuario no encontrado", error.getMessage());
         verify(usuarioRepository).findById(99L);
