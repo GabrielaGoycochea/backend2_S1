@@ -2,7 +2,7 @@
 
 API REST con Spring Boot 3, Spring Security con autenticación JWT (stateless), JPA y MySQL.
 
-> **Documentación histórica en GitHub.** Este paquete contiene el código vigente y su README. Los informes y evidencias de las semanas anteriores y las colecciones de Postman : están disponibles en el repositorio https://github.com/GabrielaGoycochea/backend2_S1. Cada vez que este README menciona uno de esos archivos, lo enlaza con su dirección completa en GitHub.
+> **Documentación histórica en GitHub.** Este paquete contiene el código vigente y su README. Los informes y evidencias de las semanas anteriores y las colecciones de Postman **no se incluyen en el ZIP**: están disponibles en el repositorio [GabrielaGoycochea/backend2_S1](https://github.com/GabrielaGoycochea/backend2_S1). Cada vez que este README menciona uno de esos archivos, lo enlaza con su dirección completa en GitHub.
 
 | Material (no incluido en el ZIP) | Semana | Enlace |
 |---|---|---|
@@ -246,7 +246,7 @@ El documento consolida 19 pruebas unitarias de Venta, 11 de Usuario y 1 prueba d
 | 2 | 55 | Sin fallos |
 | 3 | 97 | Sin fallos, errores ni omitidas; `BUILD SUCCESS` |
 | 4 | 133 (36 adicionales) | `verify` con `BUILD SUCCESS` y `All coverage checks have been met`; líneas cubiertas: `VentaServiceImpl` 98,0 % (49/50) y `UsuarioServiceImpl` 100,0 % (19/19); ramas: 96,4 % y 100,0 % |
-| 5 | [completar con el total de la última ejecución de `mvnw clean verify`] | [completar: fallos, errores, `BUILD SUCCESS` y cobertura por clase] |
+| 5 | 231 (98 adicionales) | 0 fallos, 0 errores y 0 omitidas; `verify` con `BUILD SUCCESS` y `All coverage checks have been met`. Líneas cubiertas: `CitaServiceImpl` 100 % (82/82), `MascotaServiceImpl` 100 % (33/33), `UsuarioServiceImpl` 100 % (19/19), `VentaServiceImpl` 98,0 % (49/50), `UsuarioController` 100 % (20/20) y `VentaController` 100 % (10/10). Ramas: 89 %, 75 %, 100 %, 96 % y sin ramas en los dos controladores |
 
 ## 7. Pruebas manuales en Postman
 
