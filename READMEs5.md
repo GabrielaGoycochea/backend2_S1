@@ -236,7 +236,7 @@ El documento consolida 19 pruebas unitarias de Venta, 11 de Usuario y 1 prueba d
 | Unitarias (Mockito, sin base de datos) | `CitaServiceImplTest`, `MascotaServiceImplTest`, `UsuarioServiceImplTest` | Estado inicial `Agendada`, horario ocupado, propietario registrado, rol `VETERINARIO`, permisos por rol y el registro público con rol `CLIENTE` |
 | Validación de datos (Bean Validation) | `UsuarioDatosValidosTest`, `MascotaRequestValidacionTest` | Email y nombre obligatorios y con formato válido; nombre y especie de la mascota válidos |
 | Integración (JPA y H2, sin mocks de repositorio) | `CitaRepositoryDisponibilidadIntegrationTest`, `CitaAgendamientoIntegrationTest`, `MascotaRepositoryRelacionIntegrationTest`, `UsuarioRepositoryRestriccionesIntegrationTest` | Consulta real de disponibilidad, rechazo de una segunda cita en el mismo horario, lista de mascotas de un `CLIENTE` y restricciones de la base (rol obligatorio y email único) |
-|Capa web (MockMvc con @WebMvcTest y standaloneSetup)| `UsuarioControllerTest`, `VentaControllerSeguridadTest`, `VentaControllerTest` | Códigos HTTP (200, 204, 400, 401, 403 y 404) y permisos de los endpoints de usuarios y ventas |
+|Capa web (MockMvc con @WebMvcTest y standaloneSetup)| `UsuarioControllerTest`, `VentaControllerSeguridadTest`, `VentaControllerTest` | Verificación de respuestas HTTP y permisos de usuarios y ventas. Las pruebas con @WebMvcTest comprueban autorizaciones mediante Spring Security, mientras que standaloneSetup verifica respuestas del controlador con servicios simulados|
 | Entidades | `RelacionesBidireccionalesTest` | `toString`, `equals` y `hashCode` sin recursión infinita en relaciones bidireccionales |
 
 ### 6.5 Evolución de la suite
