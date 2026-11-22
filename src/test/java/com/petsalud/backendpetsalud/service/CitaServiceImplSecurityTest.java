@@ -55,8 +55,9 @@ class CitaServiceImplSecurityTest {
 
         veterinario = new Usuario();
         veterinario.setId(5L);
+        veterinario.setRol(com.petsalud.backendpetsalud.entity.Rol.VETERINARIO);
 
-        fecha = LocalDateTime.of(2026, 11, 10, 10, 0);
+        fecha = LocalDateTime.of(2030, 1, 15, 10, 0);
     }
 
     @Test

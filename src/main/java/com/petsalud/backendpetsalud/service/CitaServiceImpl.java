@@ -1,14 +1,15 @@
 package com.petsalud.backendpetsalud.service;
 
 import com.petsalud.backendpetsalud.entity.Cita;
-import com.petsalud.backendpetsalud.security.AutorizacionService;
 import com.petsalud.backendpetsalud.entity.Mascota;
+import com.petsalud.backendpetsalud.entity.Rol;
 import com.petsalud.backendpetsalud.entity.Usuario;
 import com.petsalud.backendpetsalud.repository.CitaRepository;
 import com.petsalud.backendpetsalud.repository.MascotaRepository;
 import com.petsalud.backendpetsalud.repository.UsuarioRepository;
-import com.petsalud.backendpetsalud.service.CitaService;
+import com.petsalud.backendpetsalud.security.AutorizacionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -17,6 +18,9 @@ import java.util.Optional;
 
 @Service
 public class CitaServiceImpl implements CitaService {
+
+    private static final String AGENDADA = "Agendada";
+    private static final String CANCELADA = "Cancelada";
 
     @Autowired
     private CitaRepository citaRepository;
@@ -35,21 +39,28 @@ public class CitaServiceImpl implements CitaService {
         Mascota mascota = mascotaRepository.findById(mascotaId)
                 .orElseThrow(() -> new IllegalArgumentException("Mascota no encontrada"));
 
-        autorizacionService.verificarPropietarioOAdmin(
-                mascota.getPropietario().getId()
-        );
+        // S5 La mascota debe tener un propietario registrado
+        autorizacionService.verificarPropietarioOAdmin(propietarioIdDe(mascota));
 
         Usuario veterinario = usuarioRepository.findById(veterinarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Veterinario no encontrado"));
 
-        // Opcional: Verificar disponibilidad del veterinario en ese horario
+        // S5 El usuario asignado debe ser realmente un veterinario
+        if (veterinario.getRol() != Rol.VETERINARIO) {
+            throw new IllegalArgumentException("El usuario indicado no es un veterinario");
+        }
+
+        // S5 No se puede agendar en un horario ya ocupado por el veterinario
+        if (citaRepository.existsByVeterinarioIdAndFechaHoraAndEstadoNot(veterinarioId, fechaHora, CANCELADA)) {
+            throw new IllegalArgumentException("El veterinario ya tiene una cita agendada en ese horario");
+        }
 
         Cita cita = Cita.builder()
                 .mascota(mascota)
                 .veterinario(veterinario)
                 .fechaHora(fechaHora)
                 .motivo(motivo)
-                .estado("Agendada")
+                .estado(AGENDADA)
                 .build();
 
         return citaRepository.save(cita);
@@ -66,23 +77,21 @@ public class CitaServiceImpl implements CitaService {
         Cita cita = resultado.get();
         Usuario usuario = autorizacionService.obtenerUsuarioAutenticado();
 
-        boolean esAdmin =
-                usuario.getRol() == com.petsalud.backendpetsalud.entity.Rol.ADMIN;
+        boolean esAdmin = usuario.getRol() == Rol.ADMIN;
 
         boolean esPropietario =
-                usuario.getRol() == com.petsalud.backendpetsalud.entity.Rol.CLIENTE
+                usuario.getRol() == Rol.CLIENTE
                 && cita.getMascota() != null
                 && cita.getMascota().getPropietario() != null
                 && usuario.getId().equals(cita.getMascota().getPropietario().getId());
 
         boolean esVeterinarioAsignado =
-                usuario.getRol() == com.petsalud.backendpetsalud.entity.Rol.VETERINARIO
+                usuario.getRol() == Rol.VETERINARIO
                 && cita.getVeterinario() != null
                 && usuario.getId().equals(cita.getVeterinario().getId());
 
         if (!esAdmin && !esPropietario && !esVeterinarioAsignado) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "No tiene permiso para consultar esta cita");
+            throw new AccessDeniedException("No tiene permiso para consultar esta cita");
         }
 
         return resultado;
@@ -95,16 +104,15 @@ public class CitaServiceImpl implements CitaService {
 
         Usuario usuario = autorizacionService.obtenerUsuarioAutenticado();
 
-        boolean esAdmin = usuario.getRol() == com.petsalud.backendpetsalud.entity.Rol.ADMIN;
+        boolean esAdmin = usuario.getRol() == Rol.ADMIN;
 
         boolean esVeterinarioAsignado =
-                usuario.getRol() == com.petsalud.backendpetsalud.entity.Rol.VETERINARIO
+                usuario.getRol() == Rol.VETERINARIO
                 && cita.getVeterinario() != null
                 && usuario.getId().equals(cita.getVeterinario().getId());
 
         if (!esAdmin && !esVeterinarioAsignado) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "No tiene permiso para modificar esta cita");
+            throw new AccessDeniedException("No tiene permiso para modificar esta cita");
         }
 
         cita.setEstado(nuevoEstado);
@@ -116,9 +124,10 @@ public class CitaServiceImpl implements CitaService {
         Cita cita = citaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Cita no encontrada"));
 
-        autorizacionService.verificarPropietarioOAdmin(
-                cita.getMascota().getPropietario().getId()
-        );
+        if (cita.getMascota() == null) {
+            throw new IllegalArgumentException("La cita no tiene una mascota asociada");
+        }
+        autorizacionService.verificarPropietarioOAdmin(propietarioIdDe(cita.getMascota()));
 
         citaRepository.deleteById(id);
     }
@@ -130,37 +139,32 @@ public class CitaServiceImpl implements CitaService {
 
         Usuario usuario = autorizacionService.obtenerUsuarioAutenticado();
 
-        if (usuario.getRol() == com.petsalud.backendpetsalud.entity.Rol.ADMIN) {
+        if (usuario.getRol() == Rol.ADMIN) {
             return citaRepository.findByMascotaId(mascotaId);
         }
 
-        if (usuario.getRol() == com.petsalud.backendpetsalud.entity.Rol.CLIENTE) {
-            autorizacionService.verificarPropietarioOAdmin(
-                    mascota.getPropietario().getId()
-            );
+        if (usuario.getRol() == Rol.CLIENTE) {
+            autorizacionService.verificarPropietarioOAdmin(propietarioIdDe(mascota));
             return citaRepository.findByMascotaId(mascotaId);
         }
 
-        if (usuario.getRol() == com.petsalud.backendpetsalud.entity.Rol.VETERINARIO) {
+        if (usuario.getRol() == Rol.VETERINARIO) {
             return citaRepository.findByMascotaId(mascotaId).stream()
                     .filter(cita -> cita.getVeterinario() != null
                             && usuario.getId().equals(cita.getVeterinario().getId()))
                     .toList();
         }
 
-        throw new org.springframework.security.access.AccessDeniedException(
-                "No tiene permiso para consultar estas citas");
+        throw new AccessDeniedException("No tiene permiso para consultar estas citas");
     }
 
     @Override
     public List<Cita> listarCitasPorVeterinario(Long veterinarioId) {
         Usuario usuario = autorizacionService.obtenerUsuarioAutenticado();
 
-        if (usuario.getRol() != com.petsalud.backendpetsalud.entity.Rol.ADMIN
-                && (usuario.getRol() != com.petsalud.backendpetsalud.entity.Rol.VETERINARIO
-                || !usuario.getId().equals(veterinarioId))) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "No tiene permiso para consultar estas citas");
+        if (usuario.getRol() != Rol.ADMIN
+                && (usuario.getRol() != Rol.VETERINARIO || !usuario.getId().equals(veterinarioId))) {
+            throw new AccessDeniedException("No tiene permiso para consultar estas citas");
         }
 
         return citaRepository.findByVeterinarioId(veterinarioId);
@@ -170,11 +174,19 @@ public class CitaServiceImpl implements CitaService {
     public List<Cita> listarCitasEntreFechas(LocalDateTime inicio, LocalDateTime fin) {
         Usuario usuario = autorizacionService.obtenerUsuarioAutenticado();
 
-        if (usuario.getRol() != com.petsalud.backendpetsalud.entity.Rol.ADMIN) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "Solo un administrador puede consultar todas las citas por fecha");
+        if (usuario.getRol() != Rol.ADMIN) {
+            throw new AccessDeniedException("Solo un administrador puede consultar todas las citas por fecha");
         }
 
         return citaRepository.findByFechaHoraBetween(inicio, fin);
+    }
+
+    // S5 Evita un NullPointerException (error 500) cuando la mascota no tiene propietario registrado
+    private Long propietarioIdDe(Mascota mascota) {
+        Usuario propietario = mascota.getPropietario();
+        if (propietario == null || propietario.getId() == null) {
+            throw new IllegalArgumentException("La mascota no tiene un propietario registrado");
+        }
+        return propietario.getId();
     }
 }

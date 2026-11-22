@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -96,5 +97,57 @@ class VentaControllerTest {
 
         mockMvc.perform(get("/api/ventas/99"))
                 .andExpect(status().isNotFound());
+    }
+
+    // ------------------------------------ Semana 5 ------------------------------------
+    // Retroalimentación: VentaController tenía 3 pruebas (6 de 10 líneas). Estas cubren los endpoints restantes.
+
+    private Venta ventaDe(Long id, String total) {
+        Usuario usuario = Usuario.builder().id(1L).nombre("Juan").rol(Rol.CLIENTE).build();
+        return Venta.builder().id(id).usuario(usuario).productos(List.of()).total(new BigDecimal(total)).build();
+    }
+
+    @Test
+    @DisplayName("GET /api/ventas/{id} responde 200 con la venta si existe")
+    void obtenerVentaPorId_existe_responde200() throws Exception {
+        // Arrange
+        when(ventaService.obtenerVentaPorId(100L)).thenReturn(Optional.of(ventaDe(100L, "24980")));
+
+        // Act
+        ResultActions respuesta = mockMvc.perform(get("/api/ventas/100"));
+
+        // Assert
+        respuesta.andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(100))
+                .andExpect(jsonPath("$.total").value(24980));
+    }
+
+    @Test
+    @DisplayName("GET /api/ventas/usuario/{usuarioId} responde 200 con las ventas del usuario")
+    void listarVentasPorUsuario_responde200() throws Exception {
+        // Arrange
+        when(ventaService.listarVentasPorUsuario(1L)).thenReturn(List.of(ventaDe(100L, "5990"), ventaDe(101L, "18990")));
+
+        // Act
+        ResultActions respuesta = mockMvc.perform(get("/api/ventas/usuario/1"));
+
+        // Assert
+        respuesta.andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[1].total").value(18990));
+    }
+
+    @Test
+    @DisplayName("GET /api/ventas responde 200 con todas las ventas")
+    void listarTodasLasVentas_responde200() throws Exception {
+        // Arrange
+        when(ventaService.listarTodasLasVentas()).thenReturn(List.of(ventaDe(100L, "5990")));
+
+        // Act
+        ResultActions respuesta = mockMvc.perform(get("/api/ventas"));
+
+        // Assert
+        respuesta.andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
     }
 }

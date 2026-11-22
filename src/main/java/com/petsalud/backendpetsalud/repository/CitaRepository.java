@@ -12,4 +12,7 @@ public interface CitaRepository extends JpaRepository<Cita, Long> {
     List<Cita> findByMascotaId(Long mascotaId);
     List<Cita> findByVeterinarioId(Long veterinarioId);
     List<Cita> findByFechaHoraBetween(LocalDateTime inicio, LocalDateTime fin);
+
+    // Semana 5: horario ocupado = el veterinario ya tiene una cita en esa fecha y hora que no esta cancelada
+    boolean existsByVeterinarioIdAndFechaHoraAndEstadoNot(Long veterinarioId, LocalDateTime fechaHora, String estado);
 }

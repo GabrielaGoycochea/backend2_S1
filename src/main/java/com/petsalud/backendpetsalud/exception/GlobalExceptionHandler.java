@@ -30,7 +30,20 @@ public class GlobalExceptionHandler {
         this.actividad = actividad;
     }
 
-    /** Reglas de negocio (email repetido, recurso inexistente, etc.): 400 en vez de 500. */
+    /** Semana 5: recurso inexistente (por ejemplo, PUT /api/usuarios/{id} con un id que no existe): 404. */
+    @ExceptionHandler(RecursoNoEncontradoException.class)
+    public ResponseEntity<Map<String, Object>> manejarNoEncontrado(RecursoNoEncontradoException ex) {
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                Map.of(
+                        "status", 404,
+                        "error", "Not Found",
+                        "message", ex.getMessage()
+                )
+        );
+    }
+
+    /** Reglas de negocio (email repetido, datos incompletos, etc.): 400 en vez de 500. */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> manejarArgumentoInvalido(
             IllegalArgumentException ex) {
