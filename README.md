@@ -2,115 +2,36 @@
 
 API REST con Spring Boot 3, Spring Security con autenticación JWT (stateless), JPA y MySQL.
 
-## Novedades de la Semana 3 (rama `semana3-seguridad`)
+> **Documentación histórica en GitHub.** Este paquete contiene el código vigente y su README. Los informes y evidencias de las semanas anteriores y las colecciones de Postman **no se incluyen en el ZIP**: están disponibles en el repositorio [GabrielaGoycochea/backend2_S1](https://github.com/GabrielaGoycochea/backend2_S1). Cada vez que este README menciona uno de esos archivos, lo enlaza con su dirección completa en GitHub.
 
-| Criterio de la pauta | Qué se agregó | Dónde |
+| Material (no incluido en el ZIP) | Semana | Enlace |
 |---|---|---|
-| 1 y 7. Análisis e informe | Amenazas, requerimientos, matriz de roles, estrategias, guía y explicación técnica | `docs/semana3/INFORME_SEMANA3.md` |
-| 2. Configuración | Monitoreo de actividad sospechosa con log en archivo, cabeceras de seguridad y CORS restringido | `ActividadSospechosaService`, `AuditoriaRequestFilter`, `SecurityConfig` |
-| 3. JWT | El token incluye y exige la audiencia (`aud=petsalud-api`) además del emisor | `JwtUtil` |
-| 4. Roles | `@PreAuthorize` en los 43 endpoints; eliminar expedientes queda solo para ADMIN | `ReglasAcceso`, controladores |
-| 5. Amenazas | DTO validados (sin `<`, `>`, comillas ni asignación masiva) y pruebas de SQL Injection, XSS y CSRF | `dto/`, `AmenazasComunesTest`, `InyeccionSqlRepositorioTest`, colección Postman de la Semana 3 |
-| 6. GitHub | Este README, el informe y las evidencias | `docs/semana3/` |
+| Colección Postman: autenticación y endpoints (35 solicitudes) | 2 | [PetSalud_Semana2.postman_collection.json](https://github.com/GabrielaGoycochea/backend2_S1/blob/main/postman/PetSalud_Semana2.postman_collection.json) |
+| Informe técnico de seguridad | 3 | [INFORME_SEMANA3.md](https://github.com/GabrielaGoycochea/backend2_S1/blob/main/docs/semana3/INFORME_SEMANA3.md) |
+| Evidencias de seguridad (capturas y log) | 3 | [docs/semana3/evidencias](https://github.com/GabrielaGoycochea/backend2_S1/tree/main/docs/semana3/evidencias) |
+| Colección Postman: pruebas de amenazas | 3 | [PetSalud_Semana3_Amenazas.postman_collection.json](https://github.com/GabrielaGoycochea/backend2_S1/blob/main/postman/PetSalud_Semana3_Amenazas.postman_collection.json) |
+| Registro técnico de pruebas y cobertura | 4 | [Registro_Pruebas_Cobertura_S4.md](https://github.com/GabrielaGoycochea/backend2_S1/blob/main/docs/semana4/Registro_Pruebas_Cobertura_S4.md) |
 
-Resultado: **97 pruebas automáticas sin fallos** (42 nuevas) y 23 pruebas manuales contra la API con base de datos real (`docs/semana3/evidencias/`).
+## Contenido
 
-## Novedades de la Semana 5 (ramas `Semana5-Backend2-gaby` y `Semana5_Monica_PruebasUnitarias`): citas, usuarios y mascotas
+**Guía del proyecto**
 
-| Requerimiento | Qué se agregó | Dónde |
-|---|---|---|
-| Cita con estado inicial | Toda cita nueva queda con estado `Agendada` | `CitaServiceImpl` |
-| Horario ocupado | No se agenda una cita si el veterinario ya tiene otra en esa misma fecha y hora (las canceladas no cuentan) | `CitaServiceImpl`, `CitaRepository` |
-| Relación mascota-veterinario | La mascota debe tener propietario registrado (error claro en lugar de un error 500) y el usuario asignado debe tener rol `VETERINARIO` | `CitaServiceImpl`, `MascotaServiceImpl` |
-| Datos del usuario | Email y nombre obligatorios y con formato válido; el registro público siempre asigna rol `CLIENTE`; la base de datos exige rol y email único | `UsuarioDatosValidosTest`, `UsuarioServiceImplTest`, `UsuarioRepositoryRestriccionesIntegrationTest` |
-| Relación usuario-mascota | Un `CLIENTE` tiene su lista de mascotas guardada en la base; nombre y especie de la mascota válidos | `MascotaRepositoryRelacionIntegrationTest`, `MascotaRequestValidacionTest`, `MascotaServiceImplTest` |
-| Cobertura | La regla de JaCoCo (80 % de líneas por clase) ahora incluye también `CitaServiceImpl` y `MascotaServiceImpl` | `pom.xml` |
+1. [Requisitos](#1-requisitos)
+2. [Configuración de la base de datos](#2-configuración-de-la-base-de-datos)
+3. [Cómo ejecutar](#3-cómo-ejecutar)
+4. [Usuarios de prueba](#4-usuarios-de-prueba-perfil-prueba)
+5. [Roles y permisos](#5-roles-y-permisos)
 
-Pruebas unitarias con Mockito y Bean Validation (sin base de datos): `CitaServiceImplTest`, `MascotaServiceImplTest`, `UsuarioServiceImplTest`, `UsuarioDatosValidosTest` y `MascotaRequestValidacionTest`.
+**Pruebas y seguridad**
 
-Pruebas de integración con JPA y H2 (sin mocks de repositorio): `CitaRepositoryDisponibilidadIntegrationTest`, `CitaAgendamientoIntegrationTest`, `MascotaRepositoryRelacionIntegrationTest` y `UsuarioRepositoryRestriccionesIntegrationTest`.
+6. [Pruebas automatizadas](#6-pruebas-automatizadas)
+7. [Pruebas manuales en Postman](#7-pruebas-manuales-en-postman)
+8. [Monitoreo de actividad sospechosa](#8-monitoreo-de-actividad-sospechosa-semana-3)
+9. [Limitaciones conocidas y mejoras planificadas](#9-limitaciones-conocidas-y-mejoras-planificadas)
 
-Límite conocido: la disponibilidad compara la fecha y hora exactas (el modelo no registra la duración de una cita).
+**Historia del proyecto**
 
-Cancelación actual: `cancelarCita()` elimina el registro mediante `deleteById`; en cambio, una cita que cambia al estado `Cancelada` mediante `actualizarEstadoCita()` permanece registrada y no bloquea el horario. Por tanto, el endpoint DELETE no conserva el historial de esa cita.
-
-### Capa web y retroalimentación de la Semana 4 (rama `semana5-jorge-controladores`)
-
-| Recomendación o hallazgo | Qué se agregó | Dónde |
-|---|---|---|
-| Pruebas de `UsuarioController` con `@WebMvcTest` | 16 pruebas con la seguridad real: registro (200 y 400), consultas (200, 404, 401 y 403), actualización (200, 400, 404 y 403) y eliminación (204 y 403) | `UsuarioControllerTest` |
-| `VentaController` con pocas pruebas | 3 pruebas de endpoints y 4 de permisos (401, 403 por `@PreAuthorize`, 403 por la regla de la Semana 4 y 200) | `VentaControllerTest`, `VentaControllerSeguridadTest` |
-| Controladores en la regla de JaCoCo | `UsuarioController` y `VentaController` (ambos en 100 % de líneas) | `pom.xml` |
-| PUT de un usuario inexistente respondía 400 | Responde 404, igual que GET. `RecursoNoEncontradoException` extiende `IllegalArgumentException` y el manejador global la traduce a 404 | `RecursoNoEncontradoException`, `GlobalExceptionHandler`, `UsuarioServiceImpl` |
-| `StackOverflowError` en `toString` y `hashCode` de usuarios con mascotas (Lombok `@Data` en relaciones bidireccionales) | Listas inversas fuera de `toString`, `equals` y `hashCode`; la contraseña tampoco aparece en `toString` | `Usuario`, `Mascota`, `RelacionesBidireccionalesTest` |
-| Integración continua | GitHub Actions ejecuta `mvnw verify` en cada push y pull request y publica los reportes | `.github/workflows/pruebas-backend.yml` |
-
-Las pruebas que levantan el contexto (`contextLoads` y el rollback con H2) necesitan `JWT_SECRET` en **Base64**; con un texto cualquiera fallan al crear `JwtUtil`. Para generar una clave local en PowerShell:
-
-```powershell
-$env:JWT_SECRET = [Convert]::ToBase64String([byte[]](1..48 | ForEach-Object { Get-Random -Maximum 256 }))
-```
-
-Mejora planificada para la evaluación sumativa, como sugirió el profesor: control de concurrencia con `@Version` en `Producto` y una prueba de integración con dos ventas simultáneas del último producto. El mismo riesgo existe al agendar dos citas al mismo veterinario a la misma hora; ahí se resolvería con un índice único (veterinario, fecha y hora).
-
-```powershell
-.\mvnw.cmd verify
-```
-
-## Novedades de la Semana 4 (rama `semana4-pruebas`): pruebas unitarias
-
-| Requerimiento | Qué se agregó | Dónde |
-|---|---|---|
-| Gestión de ventas | Solo se registra una venta si **todos** los productos tienen stock (un stock nulo cuenta como sin stock); el stock se descuenta únicamente cuando la venta completa es válida. El total es la suma de los precios | `VentaServiceImpl` |
-| Validación de usuarios | El usuario titular de la venta debe tener nombre, apellido, email y dirección, y rol `ADMIN` o `CLIENTE` (un `VETERINARIO` recibe acceso denegado) | `VentaServiceImpl` |
-| Relación Producto-Proveedor | Nueva entidad `Proveedor` y relación `@ManyToOne` desde `Producto` | `Proveedor`, `Producto` |
-| Simulación de dependencias | Mockito reemplaza los repositorios y `AutorizacionService`; no se usa MySQL | `VentaServiceImplTest`, `UsuarioServiceImplTest` |
-| Cobertura | JaCoCo genera el informe y `verify` falla si `VentaServiceImpl` o `UsuarioServiceImpl` bajan de 80 % de líneas | `pom.xml` |
-
-Herramientas: JUnit 5, Mockito (ambas incluidas en `spring-boot-starter-test`, versiones administradas por Spring Boot) y JaCoCo 0.8.12.
-
-### Cómo ejecutar las pruebas de la Semana 4
-
-Solo las pruebas unitarias (no necesitan MySQL ni variables de entorno):
-
-```powershell
-.\mvnw.cmd test "-Dtest=VentaServiceImplTest,UsuarioServiceImplTest,UsuarioTest,VentaControllerTest"
-```
-
-Suite sin la prueba de contexto (ejecucion parcial), con comprobacion JaCoCo del 80 %:
-
-```powershell
-.\mvnw.cmd verify "-Dtest=!BackendpetsaludApplicationTests"
-```
-
-Suite completa con comprobacion JaCoCo del 80 % (la prueba de contexto usa H2; no requiere servidor MySQL durante las pruebas, aunque pueden necesitarse variables de entorno de seguridad):
-```powershell
-.\mvnw.cmd verify
-```
-
-
-El informe de cobertura queda en `target/site/jacoco/index.html`.
-
-### Registro tecnico de pruebas y cobertura
-
-El inventario detallado de las pruebas, sus escenarios, resultados y porcentajes de cobertura se encuentra en [Registro de pruebas y cobertura - Semana 4](docs/semana4/Registro_Pruebas_Cobertura_S4.md).
-
-El documento consolida 19 pruebas unitarias de Venta, 11 de Usuario y 1 prueba de integracion de rollback con H2. Tambien incluye las mediciones historicas y finales de JaCoCo y las referencias a las evidencias. Estas 31 pruebas forman parte de la bateria completa de 133 pruebas aprobadas; el registro no las presenta a todas como nuevas.
-
-### Integridad transaccional de ventas
-
-El metodo `realizarVenta()` de `VentaServiceImpl` utiliza `@Transactional` para revertir los cambios de stock si ocurre una excepcion durante la operacion. Antes de descontar existencias, comprueba que todos los productos tengan stock disponible, considerando `null` como stock no disponible.
-
-La prueba de regresion `realizarVenta_segundoProductoSinStock_noDescuentaPrimero` comprueba que un producto sin stock impida descontar los anteriores. La prueba `realizarVenta_stockNulo_lanzaError` verifica el rechazo del stock nulo sin guardar descuentos ni ventas.
-
-La prueba de integracion `VentaRollbackIntegrationTest`, mediante `errorAlGuardarVenta_revierteDescuentosEnBaseDeDatos`, utiliza una base H2 aislada y simula un fallo al guardar la venta. Se verifico que las existencias de los dos productos vuelven a sus valores iniciales (5 y 3). Esta comprobacion no necesita MySQL.
-
-| Clase de prueba | Qué comprueba |
-|---|---|
-| `VentaServiceImplTest` | Total de la venta, stock insuficiente o nulo (sin descontar stock de ningún producto), datos incompletos del usuario, roles permitidos y no permitidos, relación Venta-Usuario, Venta-Producto y Producto-Proveedor, y las consultas de ventas |
-| `UsuarioServiceImplTest` | Registro (clave cifrada y rol `CLIENTE`), email repetido, actualización sin cambiar email ni clave, consulta, listado y eliminación |
-| `UsuarioTest` | Construcción y comparación de la entidad `Usuario` |
-| `VentaControllerTest` | Códigos HTTP y JSON del endpoint `/api/ventas` con el servicio simulado |
+10. [Historial de entregas por semana (2 a 5)](#10-historial-de-entregas-por-semana)
 
 ## 1. Requisitos
 
@@ -206,7 +127,128 @@ Se crean automáticamente al iniciar, si no existen. La contraseña de los tres 
 | `vet@petsalud.cl` | VETERINARIO | Empleado |
 | `cliente@petsalud.cl` | CLIENTE | Cliente |
 
-## 5. Pruebas en Postman
+## 5. Roles y permisos
+
+| Quién | Rutas |
+|---|---|
+| Público | `POST /api/usuarios/registro`, `GET /api/productos` y `/api/productos/**` (excepto `stock-bajo`) |
+| ADMIN (gerente) | `/api/usuarios/**`, crear/editar/borrar productos, `GET /api/ventas`, `GET /api/citas/entre-fechas`, crear y eliminar recompensas |
+| VETERINARIO y ADMIN | `/api/expedientes/**`, `GET /api/productos/stock-bajo`, `GET /api/citas/veterinario/**`, `PUT /api/citas/*/estado` |
+| Cliente autenticado | Solo **sus propios** datos: sus mascotas, sus citas, sus ventas, sus notificaciones y sus recompensas |
+| VETERINARIO (empleado) | **Consulta** mascotas, expedientes y recompensas de los clientes; registra expedientes **a su propio nombre**; cambia el estado solo de **sus citas asignadas**. **No** modifica ni elimina mascotas, no consulta las ventas de los clientes ni gestiona citas de otros veterinarios |
+
+La autorización tiene tres capas:
+
+1. Las reglas por ruta y rol de `SecurityConfig`.
+2. **Semana 3:** `@PreAuthorize` en cada método de los controladores, con las reglas de `ReglasAcceso` (`PUBLICO`, `AUTENTICADO`, `PERSONAL` y `GERENTE`). Si una ruta quedara mal configurada, la anotación igual bloquea al rol incorrecto. `PreAuthorizeTest` falla si algún endpoint queda sin regla.
+3. La verificación de **propiedad** dentro de los servicios (`AutorizacionService`), que evita que un cliente cambie el id en la URL y vea datos ajenos (IDOR). Se aplica en mascotas, citas, ventas, notificaciones, recompensas y expedientes.
+
+Desde la Semana 3, eliminar un expediente médico (`DELETE /api/expedientes/{id}`) es solo para ADMIN.
+
+### Decisión de diseño: nombres de roles
+
+Los nombres de los roles en el código no coinciden con los del negocio. Se mantuvieron por compatibilidad con los datos y los tokens ya existentes, y la equivalencia queda documentada aquí y en `ReglasAcceso`:
+
+| Rol en el código | Rol en el negocio | Alcance |
+|---|---|---|
+| `CLIENTE` | Cliente | Solo sus propios recursos (mascotas, citas, ventas, notificaciones y recompensas) |
+| `VETERINARIO` | Empleado | Atención de citas y expedientes; consulta de productos y de datos de clientes |
+| `ADMIN` | Gerente | Gestión completa del sistema |
+
+En `ReglasAcceso`, `PERSONAL` equivale a empleado o gerente y `GERENTE` equivale a `ADMIN`.
+
+Si en el futuro se decide renombrar los roles, la migración controlada sería: (1) agregar los nombres nuevos al enum `Rol` y aceptar ambos temporalmente; (2) actualizar con SQL la columna `rol` de la tabla `usuarios`; (3) esperar a que expiren los tokens vigentes (duran 15 minutos) o invalidarlos; (4) actualizar `@PreAuthorize`, `SecurityConfig` y las pruebas, y retirar los nombres antiguos.
+
+## 6. Pruebas automatizadas
+
+### 6.1 Cómo ejecutarlas
+
+Las pruebas que levantan el contexto de Spring (`BackendpetsaludApplicationTests` y el rollback de ventas) usan H2 en memoria, por lo que **no necesitan MySQL**, pero sí la variable `JWT_SECRET` en **Base64**; con un texto cualquiera fallan al crear `JwtUtil`. Para generar una clave local en PowerShell:
+
+```powershell
+$env:JWT_SECRET = [Convert]::ToBase64String([byte[]](1..48 | ForEach-Object { Get-Random -Maximum 256 }))
+```
+
+| Qué ejecutar | Comando |
+|---|---|
+| Suite completa con comprobación de cobertura (recomendado) | `.\mvnw.cmd clean verify` |
+| Suite completa sin comprobación de cobertura | `.\mvnw.cmd test` |
+| Solo la Semana 3 (seguridad) | `.\mvnw.cmd test "-Dtest=PreAuthorizeTest,AmenazasComunesTest,InyeccionSqlRepositorioTest,MonitoreoSeguridadTest,ActividadSospechosaServiceTest"` |
+| Subconjunto de seguridad (autorización, JWT y bloqueo) | `.\mvnw.cmd test "-Dtest=*SecurityTest,AutorizacionServiceTest,Jwt*Test,SecurityConfigHttpTest,LoginAttemptServiceTest,AuthLockoutTest"` |
+| Solo la Semana 4 (ventas y usuarios, sin contexto de Spring) | `.\mvnw.cmd test "-Dtest=VentaServiceImplTest,UsuarioServiceImplTest,UsuarioTest,VentaControllerTest"` |
+| Solo la Semana 5 (unitarias con Mockito y validación de datos) | `.\mvnw.cmd test "-Dtest=CitaServiceImplTest,MascotaServiceImplTest,UsuarioServiceImplTest,UsuarioDatosValidosTest,MascotaRequestValidacionTest"` |
+
+El informe de cobertura queda en `target/site/jacoco/index.html`.
+
+### 6.2 Cobertura con JaCoCo
+
+`verify` ejecuta la regla `check` de JaCoCo (0.8.12): cada una de estas clases debe tener al menos **80 % de líneas cubiertas** y, si alguna baja de ese valor, el build falla.
+
+| Clase | Incorporada en |
+|---|---|
+| `VentaServiceImpl`, `UsuarioServiceImpl` | Semana 4 |
+| `CitaServiceImpl`, `MascotaServiceImpl` | Semana 5 |
+| `UsuarioController`, `VentaController` | Semana 5 (capa web) |
+
+La regla no implica que todo el proyecto alcance ese porcentaje: solo controla las clases listadas.
+
+### 6.3 Integración continua
+
+El flujo `.github/workflows/pruebas-backend.yml` (GitHub Actions) ejecuta `mvnw clean verify` en cada `push` y en cada pull request hacia `main` o hacia ramas que empiezan con `Semana` o `semana`. Genera un `JWT_SECRET` temporal en cada ejecución y publica como artefactos los reportes de JaCoCo y de Surefire. Si una prueba falla o la cobertura baja de 80 %, el check queda en rojo.
+
+### 6.4 Qué comprueba cada grupo de pruebas (por semana)
+
+**Semana 3: seguridad**
+
+| Clase | Qué comprueba |
+|---|---|
+| `PreAuthorizeTest` | Todos los endpoints tienen `@PreAuthorize` y los roles incorrectos reciben 403 sin llegar al servicio |
+| `AmenazasComunesTest` | SQL Injection (login, registro, búsqueda e id), XSS (mascota, diagnóstico y motivo de cita), cabeceras de seguridad y CSRF (cookie sin Bearer, login sin sesión y CORS) |
+| `InyeccionSqlRepositorioTest` | Cargas de inyección contra una base H2 real y que ningún repositorio use SQL nativo |
+| `MonitoreoSeguridadTest` y `ActividadSospechosaServiceTest` | Los eventos de seguridad quedan registrados con IP y sin contraseñas ni tokens |
+| `AuthLockoutTest` y `JwtUtilTest` (1 nueva cada una) | Cinco fallos desde una IP no bloquean al mismo usuario desde otra IP, y el JWT dura 15 minutos |
+
+**Semana 4: ventas y usuarios**
+
+| Clase de prueba | Qué comprueba |
+|---|---|
+| `VentaServiceImplTest` | Total de la venta, stock insuficiente o nulo (sin descontar stock de ningún producto), datos incompletos del usuario, roles permitidos y no permitidos, relación Venta-Usuario, Venta-Producto y Producto-Proveedor, y las consultas de ventas |
+| `UsuarioServiceImplTest` | Registro (clave cifrada y rol `CLIENTE`), email repetido, actualización sin cambiar email ni clave, consulta, listado y eliminación |
+| `UsuarioTest` | Construcción y comparación de la entidad `Usuario` |
+| `VentaControllerTest` | Códigos HTTP y JSON del endpoint `/api/ventas` con el servicio simulado |
+
+El metodo `realizarVenta()` de `VentaServiceImpl` utiliza `@Transactional` para revertir los cambios de stock si ocurre una excepcion durante la operacion. Antes de descontar existencias, comprueba que todos los productos tengan stock disponible, considerando `null` como stock no disponible.
+
+La prueba de regresion `realizarVenta_segundoProductoSinStock_noDescuentaPrimero` comprueba que un producto sin stock impida descontar los anteriores. La prueba `realizarVenta_stockNulo_lanzaError` verifica el rechazo del stock nulo sin guardar descuentos ni ventas.
+
+La prueba de integracion `VentaRollbackIntegrationTest`, mediante `errorAlGuardarVenta_revierteDescuentosEnBaseDeDatos`, utiliza una base H2 aislada y simula un fallo al guardar la venta. Se verifico que las existencias de los dos productos vuelven a sus valores iniciales (5 y 3). Esta comprobacion no necesita MySQL.
+
+**Registro técnico de pruebas y cobertura**
+
+El inventario detallado de las pruebas, sus escenarios, resultados y porcentajes de cobertura se encuentra en [Registro de pruebas y cobertura - Semana 4](https://github.com/GabrielaGoycochea/backend2_S1/blob/main/docs/semana4/Registro_Pruebas_Cobertura_S4.md).
+
+El documento consolida 19 pruebas unitarias de Venta, 11 de Usuario y 1 prueba de integracion de rollback con H2. Tambien incluye las mediciones historicas y finales de JaCoCo y las referencias a las evidencias. Estas 31 pruebas forman parte de la bateria completa de 133 pruebas aprobadas; el registro no las presenta a todas como nuevas.
+
+**Semana 5: citas, usuarios y mascotas**
+
+| Tipo | Clases | Qué comprueban |
+|---|---|---|
+| Unitarias (Mockito, sin base de datos) | `CitaServiceImplTest`, `MascotaServiceImplTest`, `UsuarioServiceImplTest` | Estado inicial `Agendada`, horario ocupado, propietario registrado, rol `VETERINARIO`, permisos por rol y el registro público con rol `CLIENTE` |
+| Validación de datos (Bean Validation) | `UsuarioDatosValidosTest`, `MascotaRequestValidacionTest` | Email y nombre obligatorios y con formato válido; nombre y especie de la mascota válidos |
+| Integración (JPA y H2, sin mocks de repositorio) | `CitaRepositoryDisponibilidadIntegrationTest`, `CitaAgendamientoIntegrationTest`, `MascotaRepositoryRelacionIntegrationTest`, `UsuarioRepositoryRestriccionesIntegrationTest` | Consulta real de disponibilidad, rechazo de una segunda cita en el mismo horario, lista de mascotas de un `CLIENTE` y restricciones de la base (rol obligatorio y email único) |
+|Capa web (MockMvc con @WebMvcTest y standaloneSetup)| `UsuarioControllerTest`, `VentaControllerSeguridadTest`, `VentaControllerTest` | Verificación de respuestas HTTP y permisos de usuarios y ventas. Las pruebas con @WebMvcTest comprueban autorizaciones mediante Spring Security, mientras que standaloneSetup verifica respuestas del controlador con servicios simulados|
+| Entidades | `RelacionesBidireccionalesTest` | `toString`, `equals` y `hashCode` sin recursión infinita en relaciones bidireccionales |
+
+### 6.5 Evolución de la suite
+
+| Semana | Pruebas automáticas | Resultado |
+|---|---|---|
+| 2 | 55 | Sin fallos |
+| 3 | 97 | Sin fallos, errores ni omitidas; `BUILD SUCCESS` |
+| 4 | 133 (36 adicionales) | `verify` con `BUILD SUCCESS` y `All coverage checks have been met`; líneas cubiertas: `VentaServiceImpl` 98,0 % (49/50) y `UsuarioServiceImpl` 100,0 % (19/19); ramas: 96,4 % y 100,0 % |
+| 5 | 231 (98 adicionales) | 0 fallos, 0 errores y 0 omitidas; `verify` con `BUILD SUCCESS` y `All coverage checks have been met`. Líneas cubiertas: `CitaServiceImpl` 100 % (82/82), `MascotaServiceImpl` 100 % (33/33), `UsuarioServiceImpl` 100 % (19/19), `VentaServiceImpl` 98,0 % (49/50), `UsuarioController` 100 % (20/20) y `VentaController` 100 % (10/10). Ramas: 89 %, 75 %, 100 %, 96 % y sin ramas en los dos controladores |
+
+## 7. Pruebas manuales en Postman
 
 ### Cómo configurar cada petición
 
@@ -218,7 +260,7 @@ Se crean automáticamente al iniciar, si no existen. La contraseña de los tres 
 
 Se recomienda crear una **Collection** llamada "PetSalud" y guardar ahí las pruebas.
 
-**Colección Postman disponible:** `postman/PetSalud_Semana2.postman_collection.json`. Se importa desde Postman mediante **Import** y contiene 35 solicitudes organizadas en 11 carpetas (`00` a `10`), correspondientes a autenticación JWT, controles sin autenticación, usuarios, mascotas, citas, expedientes, productos, ventas, notificaciones y recompensas, además de la carpeta `10 - Evidencias del informe` (Figuras 4, 8, 10, 11, 14 y 17).
+**Colección Postman disponible:** [PetSalud_Semana2.postman_collection.json](https://github.com/GabrielaGoycochea/backend2_S1/blob/main/postman/PetSalud_Semana2.postman_collection.json) (en GitHub; descárgala con el botón **Download raw file** y luego impórtala desde Postman mediante **Import**) y contiene 35 solicitudes organizadas en 11 carpetas (`00` a `10`), correspondientes a autenticación JWT, controles sin autenticación, usuarios, mascotas, citas, expedientes, productos, ventas, notificaciones y recompensas, además de la carpeta `10 - Evidencias del informe` (Figuras 4, 8, 10, 11, 14 y 17).
 
 La colección utiliza variables como `baseUrl`, `correoPrueba`, `clavePrueba`, `jwtToken` e identificadores de recursos. Las credenciales y los tokens no se incluyen en el archivo exportado; deben configurarse localmente. Primero se ejecuta el login para obtener un JWT y luego las solicitudes correspondientes. Algunas consultas requieren datos previamente existentes en MySQL.
 
@@ -328,79 +370,22 @@ SELECT email, password, rol FROM usuarios;
 
 La columna `password` muestra un hash que empieza con `$2a$`, nunca el texto original.
 
-## 6. Roles y permisos
+### Colección de amenazas (Semana 3)
 
-| Quién | Rutas |
-|---|---|
-| Público | `POST /api/usuarios/registro`, `GET /api/productos` y `/api/productos/**` (excepto `stock-bajo`) |
-| ADMIN (gerente) | `/api/usuarios/**`, crear/editar/borrar productos, `GET /api/ventas`, `GET /api/citas/entre-fechas`, crear y eliminar recompensas |
-| VETERINARIO y ADMIN | `/api/expedientes/**`, `GET /api/productos/stock-bajo`, `GET /api/citas/veterinario/**`, `PUT /api/citas/*/estado` |
-| Cliente autenticado | Solo **sus propios** datos: sus mascotas, sus citas, sus ventas, sus notificaciones y sus recompensas |
-| VETERINARIO (empleado) | **Consulta** mascotas, expedientes y recompensas de los clientes; registra expedientes **a su propio nombre**; cambia el estado solo de **sus citas asignadas**. **No** modifica ni elimina mascotas, no consulta las ventas de los clientes ni gestiona citas de otros veterinarios |
+Descarga desde GitHub e importa [PetSalud_Semana3_Amenazas.postman_collection.json](https://github.com/GabrielaGoycochea/backend2_S1/blob/main/postman/PetSalud_Semana3_Amenazas.postman_collection.json) (si ya estaba importada, elige **Replace**). Configura la variable `clavePrueba` con la clave del perfil `prueba` y ejecuta la colección completa con el **Collection Runner** (clic derecho > **Run collection**). La carpeta `00 - Preparación` deja todo listo sin ingresar valores a mano: inicia sesión con los tres roles (`tokenCliente`, `tokenVet` y `tokenAdmin`), obtiene los IDs de los usuarios y busca la mascota `MascotaPrueba` y su expediente de prueba; si no existen, los crea en la base. Cada solicitud trae una prueba con el código esperado.
 
-La autorización tiene tres capas:
+En la primera ejecución se crean la mascota y el expediente (24 solicitudes, 35 pruebas). En las siguientes, las dos solicitudes de creación se omiten y no se duplican datos (31 pruebas).
 
-1. Las reglas por ruta y rol de `SecurityConfig`.
-2. **Semana 3:** `@PreAuthorize` en cada método de los controladores, con las reglas de `ReglasAcceso` (`PUBLICO`, `AUTENTICADO`, `PERSONAL` y `GERENTE`). Si una ruta quedara mal configurada, la anotación igual bloquea al rol incorrecto. `PreAuthorizeTest` falla si algún endpoint queda sin regla.
-3. La verificación de **propiedad** dentro de los servicios (`AutorizacionService`), que evita que un cliente cambie el id en la URL y vea datos ajenos (IDOR). Se aplica en mascotas, citas, ventas, notificaciones, recompensas y expedientes.
-
-Desde la Semana 3, eliminar un expediente médico (`DELETE /api/expedientes/{id}`) es solo para ADMIN.
-
-
-### Decisión de diseño: nombres de roles
-
-Los nombres de los roles en el código no coinciden con los del negocio. Se mantuvieron por compatibilidad con los datos y los tokens ya existentes, y la equivalencia queda documentada aquí y en `ReglasAcceso`:
-
-| Rol en el código | Rol en el negocio | Alcance |
+| Carpeta | Solicitudes | Resultado esperado |
 |---|---|---|
-| `CLIENTE` | Cliente | Solo sus propios recursos (mascotas, citas, ventas, notificaciones y recompensas) |
-| `VETERINARIO` | Empleado | Atención de citas y expedientes; consulta de productos y de datos de clientes |
-| `ADMIN` | Gerente | Gestión completa del sistema |
+| 00 - Preparación | Logins por rol, IDs de usuarios, mascota y expediente de prueba (se crean solo si no existen) | 200 |
+| 01 - SQL Injection | Login, registro, búsqueda por categoría e id de ruta con inyección | 401 en el login y 400 en el resto |
+| 02 - XSS | Script o HTML en mascota, diagnóstico y motivo de cita; cabeceras de la respuesta | 400 y cabeceras `Content-Security-Policy`, `nosniff` y `DENY` |
+| 03 - CSRF | Cookie sin Bearer, login sin `Set-Cookie` y preflight CORS desde otro sitio | 401, sin cookie y 403 |
+| 04 - Roles con @PreAuthorize | Cliente envía notificación, veterinario elimina expediente, gerente envía notificación | 403, 403 y 200 |
+| 05 - Monitoreo | JWT con la firma alterada | 401 y `JWT_INVALIDO` en el log |
 
-En `ReglasAcceso`, `PERSONAL` equivale a empleado o gerente y `GERENTE` equivale a `ADMIN`.
-
-Si en el futuro se decide renombrar los roles, la migración controlada sería: (1) agregar los nombres nuevos al enum `Rol` y aceptar ambos temporalmente; (2) actualizar con SQL la columna `rol` de la tabla `usuarios`; (3) esperar a que expiren los tokens vigentes (duran 15 minutos) o invalidarlos; (4) actualizar `@PreAuthorize`, `SecurityConfig` y las pruebas, y retirar los nombres antiguos.
-
-## 7. Pruebas automatizadas
-
-El proyecto incluye pruebas automatizadas de autorización en servicios, validación JWT, autenticación y autorización HTTP, además del bloqueo de intentos de inicio de sesión. Para ejecutar un subconjunto de las pruebas de seguridad, utiliza:
-
-```powershell
-.\mvnw.cmd test "-Dtest=*SecurityTest,AutorizacionServiceTest,Jwt*Test,SecurityConfigHttpTest,LoginAttemptServiceTest,AuthLockoutTest"
-```
-
-Para ejecutar la suite completa, utiliza `.\mvnw.cmd test`. Con la Semana 3 la suite tiene **97 pruebas, sin fallos, errores ni pruebas omitidas, con resultado BUILD SUCCESS** (en la Semana 2 eran 55).
-
-Con la Semana 4, la suite completa suma **133 pruebas** (36 adicionales respecto de las 97 documentadas en Semana 3), con **0 fallos, 0 errores y 0 omitidas**. La ejecucion limpia de `mvn verify` finalizo con **BUILD SUCCESS** y **All coverage checks have been met**. Cobertura JaCoCo de lineas: `VentaServiceImpl` **98,0 % (49/50)** y `UsuarioServiceImpl` **100,0 % (19/19)**; cobertura de ramas: **96,4 %** y **100,0 %**, respectivamente. Ambas clases superan el minimo obligatorio de **80 % de lineas**. En esta rama, `BackendpetsaludApplicationTests` utiliza H2 aislado, por lo que las pruebas automatizadas no requieren MySQL; la ejecucion normal de la API si requiere la base de datos configurada.
-
-Pruebas nuevas de la Semana 3:
-
-| Clase | Qué comprueba |
-|---|---|
-| `PreAuthorizeTest` | Todos los endpoints tienen `@PreAuthorize` y los roles incorrectos reciben 403 sin llegar al servicio |
-| `AmenazasComunesTest` | SQL Injection (login, registro, búsqueda e id), XSS (mascota, diagnóstico y motivo de cita), cabeceras de seguridad y CSRF (cookie sin Bearer, login sin sesión y CORS) |
-| `InyeccionSqlRepositorioTest` | Cargas de inyección contra una base H2 real y que ningún repositorio use SQL nativo |
-| `MonitoreoSeguridadTest` y `ActividadSospechosaServiceTest` | Los eventos de seguridad quedan registrados con IP y sin contraseñas ni tokens |
-| `AuthLockoutTest` y `JwtUtilTest` (1 nueva cada una) | Cinco fallos desde una IP no bloquean al mismo usuario desde otra IP, y el JWT dura 15 minutos |
-
-Solo las pruebas de la Semana 3 (no necesitan MySQL):
-
-```powershell
-.\mvnw.cmd test "-Dtest=PreAuthorizeTest,AmenazasComunesTest,InyeccionSqlRepositorioTest,MonitoreoSeguridadTest,ActividadSospechosaServiceTest"
-```
- Esta ejecución incluye `BackendpetsaludApplicationTests`, por lo que requiere MySQL disponible y las variables de conexión y `JWT_SECRET` correctamente configuradas. En el entorno local de revisión se utilizó MySQL en el puerto 3306.
-
-## 8. Limitaciones conocidas
-
-- **CSRF desactivado:** la credencial viaja solo en el header `Authorization`, que el navegador no agrega por su cuenta, y la API no usa cookies ni sesión. Se complementa con CORS restringido a `cors.allowed-origins`. Si algún día el token se guarda en una cookie, hay que reactivar CSRF.
-- **Citas:** desde la Semana 5 el veterinario asignado se valida contra su rol, pero el estado de una cita solo se valida como texto (letras, 3 a 20 caracteres), no contra una lista cerrada. El veterinario tampoco agenda citas (las agenda el cliente o el ADMIN).
-- **JWT sin revocación ni refresh:** un token es válido hasta que expira (15 minutos); no hay lista de tokens revocados ni token de refresco.
-- **Bloqueo en memoria:** el contador de intentos fallidos no se comparte entre varias instancias ni sobrevive a un reinicio. La combinación de correo + IP reduce el riesgo de bloqueo provocado desde otra IP, pero un atacante puede distribuir intentos entre distintas IP. Detrás de un proxy, debe configurarse correctamente la identificación de la IP del cliente.
-- **Monitoreo en memoria:** el conteo de solicitudes por IP también vive en memoria. En producción, el archivo `logs/petsalud.log` debería enviarse a un sistema de monitoreo (IDS/IPS o SIEM).
-- **Proveedores:** la entidad `Proveedor` y su relación con `Producto` existen, pero todavía no hay endpoints para crearlos o asignarlos, y la venta no exige que el producto tenga proveedor.
-- **Pruebas:** hasta la Semana 3 el proyecto contaba con 97 pruebas automatizadas aprobadas que incluyen validación de JWT, autenticación, autorización por roles, controles de los servicios y bloqueo de intentos de inicio de sesión. Las verificaciones manuales con Postman complementan esta cobertura, pero no se ha comprobado exhaustivamente el funcionamiento de todos los endpoints y escenarios posibles.
-
-## 9. Monitoreo de actividad sospechosa (Semana 3)
+## 8. Monitoreo de actividad sospechosa (Semana 3)
 
 `ActividadSospechosaService` escribe un evento por línea en el logger `SEGURIDAD`, en la consola y en `logs/petsalud.log`. Cada línea trae fecha, hora, IP, usuario, método y ruta. Nunca registra contraseñas ni tokens, y reemplaza los saltos de línea para que nadie pueda falsificar líneas del log.
 
@@ -414,7 +399,7 @@ Solo las pruebas de la Semana 3 (no necesitan MySQL):
 | `OPERACION` | POST, PUT o DELETE exitoso, con el usuario que lo hizo |
 | `RAFAGA_SOLICITUDES` | Más de 200 solicitudes desde una IP en 15 minutos |
 
-Ejemplo real (`docs/semana3/evidencias/log-seguridad.txt`):
+Ejemplo real ([docs/semana3/evidencias/log-seguridad.txt](https://github.com/GabrielaGoycochea/backend2_S1/blob/main/docs/semana3/evidencias/log-seguridad.txt)):
 
 ```text
 WARN ACCESO_DENEGADO usuario=vet@petsalud.cl ip=127.0.0.1 DELETE /api/expedientes/1
@@ -422,17 +407,73 @@ WARN JWT_INVALIDO ip=127.0.0.1 GET /api/productos/stock-bajo motivo=SignatureExc
 WARN CUENTA_BLOQUEADA usuario=otro.cliente@petsalud.cl ip=127.0.0.1 minutos=5 motivo=posible_fuerza_bruta
 ```
 
-## 10. Pruebas de amenazas en Postman (Semana 3)
+## 9. Limitaciones conocidas y mejoras planificadas
 
-Importa `postman/PetSalud_Semana3_Amenazas.postman_collection.json` (si ya estaba importada, elige **Replace**). Configura la variable `clavePrueba` con la clave del perfil `prueba` y ejecuta la colección completa con el **Collection Runner** (clic derecho > **Run collection**). La carpeta `00 - Preparación` deja todo listo sin ingresar valores a mano: inicia sesión con los tres roles (`tokenCliente`, `tokenVet` y `tokenAdmin`), obtiene los IDs de los usuarios y busca la mascota `MascotaPrueba` y su expediente de prueba; si no existen, los crea en la base. Cada solicitud trae una prueba con el código esperado.
+- **CSRF desactivado:** la credencial viaja solo en el header `Authorization`, que el navegador no agrega por su cuenta, y la API no usa cookies ni sesión. Se complementa con CORS restringido a `cors.allowed-origins`. Si algún día el token se guarda en una cookie, hay que reactivar CSRF.
+- **Citas (estado y quién agenda):** el estado de una cita solo se valida como texto (letras, 3 a 20 caracteres), no contra una lista cerrada. El veterinario asignado se valida contra su rol (desde la Semana 5), pero el veterinario tampoco agenda citas: las agenda el cliente o el ADMIN.
+- **Citas (disponibilidad):** la disponibilidad compara la fecha y hora exactas; el modelo no registra la duración de una cita.
+- **Citas (cancelación):** `cancelarCita()` elimina el registro mediante `deleteById`; en cambio, una cita que cambia al estado `Cancelada` mediante `actualizarEstadoCita()` permanece registrada y no bloquea el horario. Por tanto, el endpoint DELETE no conserva el historial de esa cita.
+- **JWT sin revocación ni refresh:** un token es válido hasta que expira (15 minutos); no hay lista de tokens revocados ni token de refresco.
+- **Bloqueo en memoria:** el contador de intentos fallidos no se comparte entre varias instancias ni sobrevive a un reinicio. La combinación de correo + IP reduce el riesgo de bloqueo provocado desde otra IP, pero un atacante puede distribuir intentos entre distintas IP. Detrás de un proxy, debe configurarse correctamente la identificación de la IP del cliente.
+- **Monitoreo en memoria:** el conteo de solicitudes por IP también vive en memoria. En producción, el archivo `logs/petsalud.log` debería enviarse a un sistema de monitoreo (IDS/IPS o SIEM).
+- **Proveedores:** la entidad `Proveedor` y su relación con `Producto` existen, pero todavía no hay endpoints para crearlos o asignarlos, y la venta no exige que el producto tenga proveedor.
+- **Pruebas manuales:** las verificaciones con Postman complementan las pruebas automatizadas, pero no se ha comprobado exhaustivamente el funcionamiento de todos los endpoints y escenarios posibles.
 
-En la primera ejecución se crean la mascota y el expediente (24 solicitudes, 35 pruebas). En las siguientes, las dos solicitudes de creación se omiten y no se duplican datos (31 pruebas).
+### Mejoras planificadas
 
-| Carpeta | Solicitudes | Resultado esperado |
+Para la evaluación sumativa, como sugirió el profesor: control de concurrencia con `@Version` en `Producto` y una prueba de integración con dos ventas simultáneas del último producto. El mismo riesgo existe al agendar dos citas al mismo veterinario a la misma hora; ahí se resolvería con un índice único (veterinario, fecha y hora).
+
+## 10. Historial de entregas por semana
+
+Resumen cronológico de lo que aportó cada entrega. El detalle de las pruebas está en la sección 6 y el material histórico (informes, evidencias y colecciones de Postman) en GitHub, según la tabla del inicio.
+
+### Semana 2: base de la API
+
+API REST con autenticación JWT, roles y servicios de usuarios, mascotas, citas, expedientes, productos, ventas, notificaciones y recompensas, con 55 pruebas automáticas y una colección de Postman de 35 solicitudes (ver sección 7).
+
+### Semana 3 (rama `semana3-seguridad`): seguridad
+
+| Criterio de la pauta | Qué se agregó | Dónde |
 |---|---|---|
-| 00 - Preparación | Logins por rol, IDs de usuarios, mascota y expediente de prueba (se crean solo si no existen) | 200 |
-| 01 - SQL Injection | Login, registro, búsqueda por categoría e id de ruta con inyección | 401 en el login y 400 en el resto |
-| 02 - XSS | Script o HTML en mascota, diagnóstico y motivo de cita; cabeceras de la respuesta | 400 y cabeceras `Content-Security-Policy`, `nosniff` y `DENY` |
-| 03 - CSRF | Cookie sin Bearer, login sin `Set-Cookie` y preflight CORS desde otro sitio | 401, sin cookie y 403 |
-| 04 - Roles con @PreAuthorize | Cliente envía notificación, veterinario elimina expediente, gerente envía notificación | 403, 403 y 200 |
-| 05 - Monitoreo | JWT con la firma alterada | 401 y `JWT_INVALIDO` en el log |
+| 1 y 7. Análisis e informe | Amenazas, requerimientos, matriz de roles, estrategias, guía y explicación técnica | [INFORME_SEMANA3.md](https://github.com/GabrielaGoycochea/backend2_S1/blob/main/docs/semana3/INFORME_SEMANA3.md) |
+| 2. Configuración | Monitoreo de actividad sospechosa con log en archivo, cabeceras de seguridad y CORS restringido | `ActividadSospechosaService`, `AuditoriaRequestFilter`, `SecurityConfig` |
+| 3. JWT | El token incluye y exige la audiencia (`aud=petsalud-api`) además del emisor | `JwtUtil` |
+| 4. Roles | `@PreAuthorize` en los 43 endpoints; eliminar expedientes queda solo para ADMIN | `ReglasAcceso`, controladores |
+| 5. Amenazas | DTO validados (sin `<`, `>`, comillas ni asignación masiva) y pruebas de SQL Injection, XSS y CSRF | `dto/`, `AmenazasComunesTest`, `InyeccionSqlRepositorioTest`, colección Postman de la Semana 3 |
+| 6. GitHub | Este README, el informe y las evidencias | [docs/semana3](https://github.com/GabrielaGoycochea/backend2_S1/tree/main/docs/semana3) |
+
+Resultado: **97 pruebas automáticas sin fallos** (42 nuevas) y 23 pruebas manuales contra la API con base de datos real ([docs/semana3/evidencias](https://github.com/GabrielaGoycochea/backend2_S1/tree/main/docs/semana3/evidencias)).
+
+### Semana 4 (rama `semana4-pruebas`): pruebas unitarias de ventas y usuarios
+
+| Requerimiento | Qué se agregó | Dónde |
+|---|---|---|
+| Gestión de ventas | Solo se registra una venta si **todos** los productos tienen stock (un stock nulo cuenta como sin stock); el stock se descuenta únicamente cuando la venta completa es válida. El total es la suma de los precios | `VentaServiceImpl` |
+| Validación de usuarios | El usuario titular de la venta debe tener nombre, apellido, email y dirección, y rol `ADMIN` o `CLIENTE` (un `VETERINARIO` recibe acceso denegado) | `VentaServiceImpl` |
+| Relación Producto-Proveedor | Nueva entidad `Proveedor` y relación `@ManyToOne` desde `Producto` | `Proveedor`, `Producto` |
+| Simulación de dependencias | Mockito reemplaza los repositorios y `AutorizacionService`; no se usa MySQL | `VentaServiceImplTest`, `UsuarioServiceImplTest` |
+| Cobertura | JaCoCo genera el informe y `verify` falla si `VentaServiceImpl` o `UsuarioServiceImpl` bajan de 80 % de líneas | `pom.xml` |
+
+Herramientas: JUnit 5, Mockito (ambas incluidas en `spring-boot-starter-test`, versiones administradas por Spring Boot) y JaCoCo 0.8.12.
+
+### Semana 5: citas, usuarios y mascotas (ramas `Semana5-Backend2-gaby` y `Semana5_Monica_PruebasUnitarias`)
+
+| Requerimiento | Qué se agregó | Dónde |
+|---|---|---|
+| Cita con estado inicial | Toda cita nueva queda con estado `Agendada` | `CitaServiceImpl` |
+| Horario ocupado | No se agenda una cita si el veterinario ya tiene otra en esa misma fecha y hora (las canceladas no cuentan) | `CitaServiceImpl`, `CitaRepository` |
+| Relación mascota-veterinario | La mascota debe tener propietario registrado (error claro en lugar de un error 500) y el usuario asignado debe tener rol `VETERINARIO` | `CitaServiceImpl`, `MascotaServiceImpl` |
+| Datos del usuario | Email y nombre obligatorios y con formato válido; el registro público siempre asigna rol `CLIENTE`; la base de datos exige rol y email único | `UsuarioDatosValidosTest`, `UsuarioServiceImplTest`, `UsuarioRepositoryRestriccionesIntegrationTest` |
+| Relación usuario-mascota | Un `CLIENTE` tiene su lista de mascotas guardada en la base; nombre y especie de la mascota válidos | `MascotaRepositoryRelacionIntegrationTest`, `MascotaRequestValidacionTest`, `MascotaServiceImplTest` |
+| Cobertura | La regla de JaCoCo (80 % de líneas por clase) ahora incluye también `CitaServiceImpl` y `MascotaServiceImpl` | `pom.xml` |
+
+### Semana 5: capa web y retroalimentación de la Semana 4 (rama `semana5-jorge-controladores`)
+
+| Recomendación o hallazgo | Qué se agregó | Dónde |
+|---|---|---|
+| Pruebas de `UsuarioController` con `@WebMvcTest` | 16 pruebas con la seguridad real: registro (200 y 400), consultas (200, 404, 401 y 403), actualización (200, 400, 404 y 403) y eliminación (204 y 403) | `UsuarioControllerTest` |
+| `VentaController` con pocas pruebas | 3 pruebas de endpoints y 4 de permisos (401, 403 por `@PreAuthorize`, 403 por la regla de la Semana 4 y 200) | `VentaControllerTest`, `VentaControllerSeguridadTest` |
+| Controladores en la regla de JaCoCo | `UsuarioController` y `VentaController` (ambos en 100 % de líneas) | `pom.xml` |
+| PUT de un usuario inexistente respondía 400 | Responde 404, igual que GET. `RecursoNoEncontradoException` extiende `IllegalArgumentException` y el manejador global la traduce a 404 | `RecursoNoEncontradoException`, `GlobalExceptionHandler`, `UsuarioServiceImpl` |
+| `StackOverflowError` en `toString` y `hashCode` de usuarios con mascotas (Lombok `@Data` en relaciones bidireccionales) | Listas inversas fuera de `toString`, `equals` y `hashCode`; la contraseña tampoco aparece en `toString` | `Usuario`, `Mascota`, `RelacionesBidireccionalesTest` |
+| Integración continua | GitHub Actions ejecuta `mvnw verify` en cada push y pull request y publica los reportes | `.github/workflows/pruebas-backend.yml` |
