@@ -1,5 +1,7 @@
 package com.petsalud.backendpetsalud.entity;
 
+import com.petsalud.backendpetsalud.entity.EstadoCita;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -57,7 +59,7 @@ class RelacionesBidireccionalesTest {
         // Arrange
         Usuario veterinario = Usuario.builder().id(2L).email("vet@petsalud.cl").nombre("Carlos").rol(Rol.VETERINARIO).build();
         Cita control = Cita.builder().id(50L).fechaHora(LocalDateTime.of(2026, 12, 1, 10, 0)).motivo("Control")
-                .estado("Agendada").mascota(luna).veterinario(veterinario).build();
+                .estado(EstadoCita.AGENDADA).mascota(luna).veterinario(veterinario).build();
         luna.getCitas().add(control);
         Venta venta = Venta.builder().id(7L).fecha(LocalDateTime.of(2026, 11, 20, 12, 0))
                 .total(new BigDecimal("24980")).usuario(cliente).productos(new ArrayList<>()).build();

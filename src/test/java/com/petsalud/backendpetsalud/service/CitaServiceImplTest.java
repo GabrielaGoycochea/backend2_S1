@@ -1,5 +1,7 @@
 package com.petsalud.backendpetsalud.service;
 
+import com.petsalud.backendpetsalud.entity.EstadoCita;
+
 import com.petsalud.backendpetsalud.entity.Cita;
 import com.petsalud.backendpetsalud.entity.Mascota;
 import com.petsalud.backendpetsalud.entity.Rol;
@@ -61,12 +63,12 @@ class CitaServiceImplTest {
     private void simularAgendamientoValido() {
         when(mascotaRepository.findById(1L)).thenReturn(Optional.of(mascota));
         when(usuarioRepository.findById(5L)).thenReturn(Optional.of(veterinario));
-        when(citaRepository.existsByVeterinarioIdAndFechaHoraAndEstadoNot(5L, fecha, "Cancelada")).thenReturn(false);
+        when(citaRepository.existsByVeterinarioIdAndFechaHoraAndEstadoNot(5L, fecha, EstadoCita.CANCELADA)).thenReturn(false);
         when(citaRepository.save(any(Cita.class))).thenAnswer(i -> i.getArgument(0));
     }
 
     private Cita cita(Long id, Usuario vet) {
-        return Cita.builder().id(id).mascota(mascota).veterinario(vet).fechaHora(fecha).estado("Agendada").build();
+        return Cita.builder().id(id).mascota(mascota).veterinario(vet).fechaHora(fecha).estado(EstadoCita.AGENDADA).build();
     }
 
     // ---------- Creacion de citas ----------
@@ -78,7 +80,7 @@ class CitaServiceImplTest {
 
         Cita resultado = citaService.agendarCita(1L, 5L, fecha, "Control anual");
 
-        assertEquals("Agendada", resultado.getEstado());
+        assertEquals(EstadoCita.AGENDADA, resultado.getEstado());
         assertEquals("Control anual", resultado.getMotivo());
         assertEquals(fecha, resultado.getFechaHora());
         verify(citaRepository).save(any(Cita.class));
@@ -91,7 +93,7 @@ class CitaServiceImplTest {
 
         citaService.agendarCita(1L, 5L, fecha, "Control anual");
 
-        verify(citaRepository).existsByVeterinarioIdAndFechaHoraAndEstadoNot(5L, fecha, "Cancelada");
+        verify(citaRepository).existsByVeterinarioIdAndFechaHoraAndEstadoNot(5L, fecha, EstadoCita.CANCELADA);
     }
 
     @Test
@@ -99,7 +101,7 @@ class CitaServiceImplTest {
     void agendarCita_horarioOcupado_lanzaError() {
         when(mascotaRepository.findById(1L)).thenReturn(Optional.of(mascota));
         when(usuarioRepository.findById(5L)).thenReturn(Optional.of(veterinario));
-        when(citaRepository.existsByVeterinarioIdAndFechaHoraAndEstadoNot(5L, fecha, "Cancelada")).thenReturn(true);
+        when(citaRepository.existsByVeterinarioIdAndFechaHoraAndEstadoNot(5L, fecha, EstadoCita.CANCELADA)).thenReturn(true);
 
         IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
                 () -> citaService.agendarCita(1L, 5L, fecha, "Control anual"));
@@ -240,7 +242,7 @@ class CitaServiceImplTest {
 
         Cita resultado = citaService.actualizarEstadoCita(1L, "Completada");
 
-        assertEquals("Completada", resultado.getEstado());
+        assertEquals(EstadoCita.COMPLETADA, resultado.getEstado());
         verify(citaRepository).save(any(Cita.class));
     }
 
@@ -251,7 +253,7 @@ class CitaServiceImplTest {
         when(autorizacionService.obtenerUsuarioAutenticado()).thenReturn(veterinario);
         when(citaRepository.save(any(Cita.class))).thenAnswer(i -> i.getArgument(0));
 
-        assertEquals("Cancelada", citaService.actualizarEstadoCita(1L, "Cancelada").getEstado());
+        assertEquals(EstadoCita.CANCELADA, citaService.actualizarEstadoCita(1L, "Cancelada").getEstado());
     }
 
     @Test
@@ -263,7 +265,7 @@ class CitaServiceImplTest {
 
         assertThrows(AccessDeniedException.class, () -> citaService.actualizarEstadoCita(1L, "Completada"));
 
-        assertEquals("Agendada", existente.getEstado());
+        assertEquals(EstadoCita.AGENDADA, existente.getEstado());
         verify(citaRepository, never()).save(any());
     }
 
@@ -278,14 +280,15 @@ class CitaServiceImplTest {
     // ---------- Cancelacion ----------
 
     @Test
-    @DisplayName("El propietario puede cancelar la cita y esta se elimina")
-    void cancelarCita_propietario_eliminaLaCita() {
+    @DisplayName("El propietario puede cancelar la cita conservando su historial")
+    void cancelarCita_propietario_conservaHistorial() {
         when(citaRepository.findById(1L)).thenReturn(Optional.of(cita(1L, veterinario)));
 
         citaService.cancelarCita(1L);
 
         verify(autorizacionService).verificarPropietarioOAdmin(3L);
-        verify(citaRepository).deleteById(1L);
+        verify(citaRepository).save(argThat(c -> EstadoCita.CANCELADA.equals(c.getEstado()) && Long.valueOf(1L).equals(c.getId())));
+        verify(citaRepository, never()).deleteById(any());
     }
 
     @Test
@@ -303,7 +306,7 @@ class CitaServiceImplTest {
     @Test
     @DisplayName("Cancelar una cita sin mascota asociada lanza un error claro")
     void cancelarCita_citaSinMascota_lanzaError() {
-        Cita sinMascota = Cita.builder().id(1L).veterinario(veterinario).fechaHora(fecha).estado("Agendada").build();
+        Cita sinMascota = Cita.builder().id(1L).veterinario(veterinario).fechaHora(fecha).estado(EstadoCita.AGENDADA).build();
         when(citaRepository.findById(1L)).thenReturn(Optional.of(sinMascota));
 
         assertThrows(IllegalArgumentException.class, () -> citaService.cancelarCita(1L));

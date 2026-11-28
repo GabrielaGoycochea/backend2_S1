@@ -1,5 +1,7 @@
 package com.petsalud.backendpetsalud.service;
 
+import com.petsalud.backendpetsalud.entity.EstadoCita;
+
 import com.petsalud.backendpetsalud.entity.Cita;
 import com.petsalud.backendpetsalud.entity.Mascota;
 import com.petsalud.backendpetsalud.entity.Rol;
@@ -79,12 +81,15 @@ class CitaAgendamientoIntegrationTest {
     @DisplayName("Si la cita del horario esta Cancelada, el horario puede volver a agendarse")
     void horarioConCitaCancelada_puedeVolverAAgendarse() {
         Cita primera = citaService.agendarCita(mascotaId, veterinarioId, fecha, "Control");
-        primera.setEstado("Cancelada");
+        citaService.cancelarCita(primera.getId());
         em.flush();
 
         Cita nueva = citaService.agendarCita(mascotaId, veterinarioId, fecha, "Vacuna");
 
-        assertEquals("Agendada", nueva.getEstado());
+        assertEquals(EstadoCita.AGENDADA, nueva.getEstado());
         assertEquals(2, citaRepository.count());
+        em.flush();
+        em.clear();
+        assertEquals(EstadoCita.CANCELADA, citaRepository.findById(primera.getId()).orElseThrow().getEstado());
     }
 }

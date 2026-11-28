@@ -1,5 +1,7 @@
 package com.petsalud.backendpetsalud.repository;
 
+import com.petsalud.backendpetsalud.entity.EstadoCita;
+
 import com.petsalud.backendpetsalud.entity.Cita;
 import com.petsalud.backendpetsalud.entity.Mascota;
 import com.petsalud.backendpetsalud.entity.Rol;
@@ -53,7 +55,7 @@ class CitaRepositoryDisponibilidadIntegrationTest {
                 .build());
     }
 
-    private void guardarCita(String estado) {
+    private void guardarCita(EstadoCita estado) {
         em.persistAndFlush(Cita.builder()
                 .mascota(mascota)
                 .veterinario(veterinario)
@@ -66,23 +68,23 @@ class CitaRepositoryDisponibilidadIntegrationTest {
     @Test
     @DisplayName("Una cita Agendada ocupa el horario del veterinario")
     void citaAgendada_ocupaHorarioDelVeterinario() {
-        guardarCita("Agendada");
+        guardarCita(EstadoCita.AGENDADA);
 
-        assertTrue(citas.existsByVeterinarioIdAndFechaHoraAndEstadoNot(veterinario.getId(), fecha, "Cancelada"));
+        assertTrue(citas.existsByVeterinarioIdAndFechaHoraAndEstadoNot(veterinario.getId(), fecha, EstadoCita.CANCELADA));
     }
 
     @Test
     @DisplayName("Una cita Cancelada deja el horario disponible")
     void citaCancelada_dejaHorarioDisponible() {
-        guardarCita("Cancelada");
+        guardarCita(EstadoCita.CANCELADA);
 
-        assertFalse(citas.existsByVeterinarioIdAndFechaHoraAndEstadoNot(veterinario.getId(), fecha, "Cancelada"));
+        assertFalse(citas.existsByVeterinarioIdAndFechaHoraAndEstadoNot(veterinario.getId(), fecha, EstadoCita.CANCELADA));
     }
 
     @Test
     @DisplayName("La cita de un veterinario no bloquea el mismo horario de otro veterinario")
     void citaDeOtroVeterinario_noBloqueaHorario() {
-        guardarCita("Agendada");
+        guardarCita(EstadoCita.AGENDADA);
         Usuario otroVeterinario = em.persistAndFlush(Usuario.builder()
                 .email("otrovet@prueba.cl")
                 .password("hash")
@@ -90,16 +92,16 @@ class CitaRepositoryDisponibilidadIntegrationTest {
                 .rol(Rol.VETERINARIO)
                 .build());
 
-        assertFalse(citas.existsByVeterinarioIdAndFechaHoraAndEstadoNot(otroVeterinario.getId(), fecha, "Cancelada"));
-        assertTrue(citas.existsByVeterinarioIdAndFechaHoraAndEstadoNot(veterinario.getId(), fecha, "Cancelada"));
+        assertFalse(citas.existsByVeterinarioIdAndFechaHoraAndEstadoNot(otroVeterinario.getId(), fecha, EstadoCita.CANCELADA));
+        assertTrue(citas.existsByVeterinarioIdAndFechaHoraAndEstadoNot(veterinario.getId(), fecha, EstadoCita.CANCELADA));
     }
 
     @Test
     @DisplayName("Una cita del mismo veterinario a otra hora no ocupa el horario consultado (solo se detecta coincidencia exacta)")
     void mismoVeterinario_otroHorario_noBloquea() {
-        guardarCita("Agendada");
+        guardarCita(EstadoCita.AGENDADA);
 
         assertFalse(citas.existsByVeterinarioIdAndFechaHoraAndEstadoNot(
-                veterinario.getId(), fecha.plusMinutes(30), "Cancelada"));
+                veterinario.getId(), fecha.plusMinutes(30), EstadoCita.CANCELADA));
     }
 }

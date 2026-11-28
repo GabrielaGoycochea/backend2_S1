@@ -23,7 +23,8 @@ public class Cita {
 
     private LocalDateTime fechaHora;
 
-    private String estado; // Ejemplos: "Agendada", "Cancelada", "Completada"
+    @Convert(converter = EstadoCita.Conversor.class)
+    private EstadoCita estado;
 
     private String motivo;
 
