@@ -8,9 +8,18 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 @Repository
 public interface CitaRepository extends JpaRepository<Cita, Long> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c from Cita c where c.id = :id")
+    Optional<Cita> buscarPorIdConBloqueo(@Param("id") Long id);
+
     List<Cita> findByMascotaId(Long mascotaId);
     List<Cita> findByVeterinarioId(Long veterinarioId);
     List<Cita> findByFechaHoraBetween(LocalDateTime inicio, LocalDateTime fin);

@@ -62,7 +62,7 @@ class CitaServiceImplTest {
 
     private void simularAgendamientoValido() {
         when(mascotaRepository.findById(1L)).thenReturn(Optional.of(mascota));
-        when(usuarioRepository.findById(5L)).thenReturn(Optional.of(veterinario));
+        when(usuarioRepository.buscarPorIdConBloqueo(5L)).thenReturn(Optional.of(veterinario));
         when(citaRepository.existsByVeterinarioIdAndFechaHoraAndEstadoNot(5L, fecha, EstadoCita.CANCELADA)).thenReturn(false);
         when(citaRepository.save(any(Cita.class))).thenAnswer(i -> i.getArgument(0));
     }
@@ -100,7 +100,7 @@ class CitaServiceImplTest {
     @DisplayName("No se puede agendar una cita en un horario ya ocupado por el veterinario")
     void agendarCita_horarioOcupado_lanzaError() {
         when(mascotaRepository.findById(1L)).thenReturn(Optional.of(mascota));
-        when(usuarioRepository.findById(5L)).thenReturn(Optional.of(veterinario));
+        when(usuarioRepository.buscarPorIdConBloqueo(5L)).thenReturn(Optional.of(veterinario));
         when(citaRepository.existsByVeterinarioIdAndFechaHoraAndEstadoNot(5L, fecha, EstadoCita.CANCELADA)).thenReturn(true);
 
         IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
@@ -162,7 +162,7 @@ class CitaServiceImplTest {
     @DisplayName("Un veterinario inexistente impide agendar la cita")
     void agendarCita_veterinarioInexistente_lanzaError() {
         when(mascotaRepository.findById(1L)).thenReturn(Optional.of(mascota));
-        when(usuarioRepository.findById(5L)).thenReturn(Optional.empty());
+        when(usuarioRepository.buscarPorIdConBloqueo(5L)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class, () -> citaService.agendarCita(1L, 5L, fecha, "Control"));
 
@@ -174,7 +174,7 @@ class CitaServiceImplTest {
     void agendarCita_usuarioQueNoEsVeterinario_lanzaError(Rol rol) {
         veterinario.setRol(rol);
         when(mascotaRepository.findById(1L)).thenReturn(Optional.of(mascota));
-        when(usuarioRepository.findById(5L)).thenReturn(Optional.of(veterinario));
+        when(usuarioRepository.buscarPorIdConBloqueo(5L)).thenReturn(Optional.of(veterinario));
 
         IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
                 () -> citaService.agendarCita(1L, 5L, fecha, "Control"));
@@ -236,7 +236,7 @@ class CitaServiceImplTest {
     @Test
     @DisplayName("El ADMIN puede cambiar el estado de una cita")
     void actualizarEstadoCita_admin_cambiaElEstado() {
-        when(citaRepository.findById(1L)).thenReturn(Optional.of(cita(1L, veterinario)));
+        when(citaRepository.buscarPorIdConBloqueo(1L)).thenReturn(Optional.of(cita(1L, veterinario)));
         when(autorizacionService.obtenerUsuarioAutenticado()).thenReturn(admin);
         when(citaRepository.save(any(Cita.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -249,7 +249,7 @@ class CitaServiceImplTest {
     @Test
     @DisplayName("El veterinario asignado puede cambiar el estado de su cita")
     void actualizarEstadoCita_veterinarioAsignado_cambiaElEstado() {
-        when(citaRepository.findById(1L)).thenReturn(Optional.of(cita(1L, veterinario)));
+        when(citaRepository.buscarPorIdConBloqueo(1L)).thenReturn(Optional.of(cita(1L, veterinario)));
         when(autorizacionService.obtenerUsuarioAutenticado()).thenReturn(veterinario);
         when(citaRepository.save(any(Cita.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -260,7 +260,7 @@ class CitaServiceImplTest {
     @DisplayName("Un CLIENTE no puede cambiar el estado de una cita")
     void actualizarEstadoCita_cliente_lanzaAccesoDenegado() {
         Cita existente = cita(1L, veterinario);
-        when(citaRepository.findById(1L)).thenReturn(Optional.of(existente));
+        when(citaRepository.buscarPorIdConBloqueo(1L)).thenReturn(Optional.of(existente));
         when(autorizacionService.obtenerUsuarioAutenticado()).thenReturn(propietario);
 
         assertThrows(AccessDeniedException.class, () -> citaService.actualizarEstadoCita(1L, "Completada"));
@@ -272,7 +272,7 @@ class CitaServiceImplTest {
     @Test
     @DisplayName("No se puede cambiar el estado de una cita inexistente")
     void actualizarEstadoCita_inexistente_lanzaError() {
-        when(citaRepository.findById(9L)).thenReturn(Optional.empty());
+        when(citaRepository.buscarPorIdConBloqueo(9L)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class, () -> citaService.actualizarEstadoCita(9L, "Completada"));
     }
@@ -282,7 +282,7 @@ class CitaServiceImplTest {
     @Test
     @DisplayName("El propietario puede cancelar la cita conservando su historial")
     void cancelarCita_propietario_conservaHistorial() {
-        when(citaRepository.findById(1L)).thenReturn(Optional.of(cita(1L, veterinario)));
+        when(citaRepository.buscarPorIdConBloqueo(1L)).thenReturn(Optional.of(cita(1L, veterinario)));
 
         citaService.cancelarCita(1L);
 
@@ -295,7 +295,7 @@ class CitaServiceImplTest {
     @DisplayName("Cancelar una cita cuya mascota no tiene propietario lanza un error claro")
     void cancelarCita_mascotaSinPropietario_lanzaError() {
         mascota.setPropietario(null);
-        when(citaRepository.findById(1L)).thenReturn(Optional.of(cita(1L, veterinario)));
+        when(citaRepository.buscarPorIdConBloqueo(1L)).thenReturn(Optional.of(cita(1L, veterinario)));
 
         assertThrows(IllegalArgumentException.class, () -> citaService.cancelarCita(1L));
 
@@ -307,7 +307,7 @@ class CitaServiceImplTest {
     @DisplayName("Cancelar una cita sin mascota asociada lanza un error claro")
     void cancelarCita_citaSinMascota_lanzaError() {
         Cita sinMascota = Cita.builder().id(1L).veterinario(veterinario).fechaHora(fecha).estado(EstadoCita.AGENDADA).build();
-        when(citaRepository.findById(1L)).thenReturn(Optional.of(sinMascota));
+        when(citaRepository.buscarPorIdConBloqueo(1L)).thenReturn(Optional.of(sinMascota));
 
         assertThrows(IllegalArgumentException.class, () -> citaService.cancelarCita(1L));
 
@@ -317,7 +317,7 @@ class CitaServiceImplTest {
     @Test
     @DisplayName("No se puede cancelar una cita inexistente")
     void cancelarCita_inexistente_lanzaError() {
-        when(citaRepository.findById(9L)).thenReturn(Optional.empty());
+        when(citaRepository.buscarPorIdConBloqueo(9L)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class, () -> citaService.cancelarCita(9L));
 

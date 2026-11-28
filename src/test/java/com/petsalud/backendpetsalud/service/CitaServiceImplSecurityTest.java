@@ -66,7 +66,7 @@ class CitaServiceImplSecurityTest {
     void usuarioAutorizadoPuedeAgendarCita() {
         when(mascotaRepository.findById(1L))
                 .thenReturn(Optional.of(mascota));
-        when(usuarioRepository.findById(5L))
+        when(usuarioRepository.buscarPorIdConBloqueo(5L))
                 .thenReturn(Optional.of(veterinario));
         when(citaRepository.save(any(Cita.class)))
                 .thenAnswer(invocacion -> invocacion.getArgument(0));

@@ -13,6 +13,8 @@ import com.petsalud.backendpetsalud.security.AutorizacionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,6 +39,7 @@ public class CitaServiceImpl implements CitaService {
     private AutorizacionService autorizacionService;
 
     @Override
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public Cita agendarCita(Long mascotaId, Long veterinarioId, LocalDateTime fechaHora, String motivo) {
         Mascota mascota = mascotaRepository.findById(mascotaId)
                 .orElseThrow(() -> new IllegalArgumentException("Mascota no encontrada"));
@@ -44,7 +47,7 @@ public class CitaServiceImpl implements CitaService {
         // S5 La mascota debe tener un propietario registrado
         autorizacionService.verificarPropietarioOAdmin(propietarioIdDe(mascota));
 
-        Usuario veterinario = usuarioRepository.findById(veterinarioId)
+        Usuario veterinario = usuarioRepository.buscarPorIdConBloqueo(veterinarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Veterinario no encontrado"));
 
         // S5 El usuario asignado debe ser realmente un veterinario
@@ -100,8 +103,9 @@ public class CitaServiceImpl implements CitaService {
     }
 
     @Override
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public Cita actualizarEstadoCita(Long id, String nuevoEstado) {
-        Cita cita = citaRepository.findById(id)
+        Cita cita = citaRepository.buscarPorIdConBloqueo(id)
                 .orElseThrow(() -> new IllegalArgumentException("Cita no encontrada"));
 
         Usuario usuario = autorizacionService.obtenerUsuarioAutenticado();
@@ -117,13 +121,26 @@ public class CitaServiceImpl implements CitaService {
             throw new AccessDeniedException("No tiene permiso para modificar esta cita");
         }
 
-        cita.setEstado(EstadoCita.desdeTexto(nuevoEstado));
+        EstadoCita destino = EstadoCita.desdeTexto(nuevoEstado);
+        if ((cita.getEstado() == CANCELADA || cita.getEstado() == null) && destino != CANCELADA) {
+            if (cita.getVeterinario() == null) {
+                throw new IllegalArgumentException("La cita no tiene veterinario asignado");
+            }
+            Long veterinarioId = cita.getVeterinario().getId();
+            usuarioRepository.buscarPorIdConBloqueo(veterinarioId)
+                    .orElseThrow(() -> new IllegalArgumentException("Veterinario no encontrado"));
+            if (citaRepository.existsByVeterinarioIdAndFechaHoraAndEstadoNot(veterinarioId, cita.getFechaHora(), CANCELADA)) {
+                throw new IllegalArgumentException("El veterinario ya tiene una cita agendada en ese horario");
+            }
+        }
+        cita.setEstado(destino);
         return citaRepository.save(cita);
     }
 
     @Override
+    @Transactional
     public void cancelarCita(Long id) {
-        Cita cita = citaRepository.findById(id)
+        Cita cita = citaRepository.buscarPorIdConBloqueo(id)
                 .orElseThrow(() -> new IllegalArgumentException("Cita no encontrada"));
 
         if (cita.getMascota() == null) {

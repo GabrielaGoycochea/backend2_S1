@@ -18,6 +18,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.*;
+import org.springframework.test.context.transaction.TestTransaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -91,5 +93,55 @@ class CitaAgendamientoIntegrationTest {
         em.flush();
         em.clear();
         assertEquals(EstadoCita.CANCELADA, citaRepository.findById(primera.getId()).orElseThrow().getEstado());
+    }
+
+    @Test
+    @DisplayName("Dos solicitudes simultaneas permiten una sola reserva")
+    void solicitudesSimultaneas_soloUnaReserva() throws Exception {
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+        ExecutorService ejecutor = Executors.newFixedThreadPool(2);
+        CyclicBarrier barrera = new CyclicBarrier(2);
+        Callable<Boolean> solicitud = () -> {
+            barrera.await(10, TimeUnit.SECONDS);
+            try {
+                citaService.agendarCita(mascotaId, veterinarioId, fecha, "Control");
+                return true;
+            } catch (IllegalArgumentException e) {
+                assertTrue(e.getMessage().contains("horario"));
+                return false;
+            }
+        };
+        try {
+            Future<Boolean> primera = ejecutor.submit(solicitud);
+            Future<Boolean> segunda = ejecutor.submit(solicitud);
+            assertEquals(1, (primera.get(20, TimeUnit.SECONDS) ? 1 : 0) + (segunda.get(20, TimeUnit.SECONDS) ? 1 : 0));
+            assertEquals(1, citaRepository.findByMascotaId(mascotaId).size());
+        } finally {
+            ejecutor.shutdownNow();
+            ejecutor.awaitTermination(10, TimeUnit.SECONDS);
+            TestTransaction.start();
+            Mascota mascota = em.find(Mascota.class, mascotaId);
+            Usuario propietario = mascota.getPropietario();
+            em.getEntityManager().createQuery("delete from Cita c where c.mascota.id = :id").setParameter("id", mascotaId).executeUpdate();
+            em.remove(mascota);
+            em.flush();
+            em.remove(propietario);
+            em.remove(em.find(Usuario.class, veterinarioId));
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+        }
+    }
+
+    @Test
+    @DisplayName("No se reactiva una cita cancelada si su horario fue reservado")
+    void reactivarCitaCancelada_horarioOcupado_seRechaza() {
+        Cita primera = citaService.agendarCita(mascotaId, veterinarioId, fecha, "Control");
+        citaService.cancelarCita(primera.getId());
+        citaService.agendarCita(mascotaId, veterinarioId, fecha, "Vacuna");
+        org.mockito.Mockito.when(autorizacionService.obtenerUsuarioAutenticado()).thenReturn(Usuario.builder().rol(Rol.ADMIN).build());
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> citaService.actualizarEstadoCita(primera.getId(), "Agendada"));
+        assertTrue(error.getMessage().contains("horario"));
+        assertEquals(EstadoCita.CANCELADA, primera.getEstado());
     }
 }
