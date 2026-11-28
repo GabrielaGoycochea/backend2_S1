@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Solo se simula AutorizacionService, porque depende del usuario autenticado y tiene sus propias pruebas.
  * Une la regla de horario ocupado de CitaServiceImpl con la consulta real de CitaRepository.
  */
+@org.junit.jupiter.api.Tag("integration")
 @DataJpaTest(properties = "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect")
 @Import(CitaServiceImpl.class)
 class CitaAgendamientoIntegrationTest {

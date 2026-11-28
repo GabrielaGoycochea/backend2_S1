@@ -172,13 +172,13 @@ $env:JWT_SECRET = [Convert]::ToBase64String([byte[]](1..48 | ForEach-Object { Ge
 | Qué ejecutar | Comando |
 |---|---|
 | Suite completa con comprobación de cobertura (recomendado) | `.\mvnw.cmd clean verify` |
-| Suite completa sin comprobación de cobertura | `.\mvnw.cmd test` |
-| Solo la Semana 3 (seguridad) | `.\mvnw.cmd test "-Dtest=PreAuthorizeTest,AmenazasComunesTest,InyeccionSqlRepositorioTest,MonitoreoSeguridadTest,ActividadSospechosaServiceTest"` |
-| Subconjunto de seguridad (autorización, JWT y bloqueo) | `.\mvnw.cmd test "-Dtest=*SecurityTest,AutorizacionServiceTest,Jwt*Test,SecurityConfigHttpTest,LoginAttemptServiceTest,AuthLockoutTest"` |
+| Solo pruebas unitarias aisladas (Surefire) | `.\mvnw.cmd test` |
+| Pruebas de seguridad e integración (incluidas en la suite completa) | `.\mvnw.cmd clean verify` |
+| Pruebas unitarias de seguridad | `.\mvnw.cmd test "-Dtest=*SecurityTest,AutorizacionServiceTest,Jwt*Test,LoginAttemptServiceTest"` |
 | Solo la Semana 4 (ventas y usuarios, sin contexto de Spring) | `.\mvnw.cmd test "-Dtest=VentaServiceImplTest,UsuarioServiceImplTest,UsuarioTest,VentaControllerTest"` |
 | Solo la Semana 5 (unitarias con Mockito y validación de datos) | `.\mvnw.cmd test "-Dtest=CitaServiceImplTest,MascotaServiceImplTest,UsuarioServiceImplTest,UsuarioDatosValidosTest,MascotaRequestValidacionTest"` |
 
-El informe de cobertura queda en `target/site/jacoco/index.html`.
+Después de ejecutar `clean verify`, el informe consolidado de cobertura queda en `target/site/jacoco/index.html`.
 
 ### 6.2 Cobertura con JaCoCo
 
@@ -194,7 +194,7 @@ La regla no implica que todo el proyecto alcance ese porcentaje: solo controla l
 
 ### 6.3 Integración continua
 
-El flujo `.github/workflows/pruebas-backend.yml` (GitHub Actions) ejecuta `mvnw clean verify` en cada `push` y en cada pull request hacia `main` o hacia ramas que empiezan con `Semana` o `semana`. Genera un `JWT_SECRET` temporal en cada ejecución y publica como artefactos los reportes de JaCoCo y de Surefire. Si una prueba falla o la cobertura baja de 80 %, el check queda en rojo.
+El flujo `.github/workflows/pruebas-backend.yml` (GitHub Actions) ejecuta `mvnw clean verify` en cada `push` y en cada pull request hacia `main` o hacia ramas que empiezan con `Semana` o `semana`. Genera un `JWT_SECRET` temporal en cada ejecución y publica como artefactos los reportes de JaCoCo, Surefire y Failsafe. Si una prueba falla o la cobertura baja de 80 %, el check queda en rojo.
 
 ### 6.4 Qué comprueba cada grupo de pruebas (por semana)
 

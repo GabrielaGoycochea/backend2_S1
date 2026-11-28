@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Las comparaciones se hacen por nombre y especie, no por entidades completas, porque Usuario y
  * Mascota usan @Data de Lombok con relaciones bidireccionales.
  */
+@org.junit.jupiter.api.Tag("integration")
 @DataJpaTest(properties = "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect")
 class MascotaRepositoryRelacionIntegrationTest {
 

@@ -46,6 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * el servicio se simula con @MockBean (Spring crea un mock limpio para cada prueba).
  * Cada prueba sigue la estructura AAA: Arrange (stub del servicio), Act (mvc.perform) y Assert (código HTTP, JSON y verify).
  */
+@org.junit.jupiter.api.Tag("integration")
 @WebMvcTest(UsuarioController.class)
 @Import({SecurityConfig.class, JwtRequestFilter.class, ActividadSospechosaService.class})
 @DisplayName("UsuarioController: contrato HTTP con seguridad real")

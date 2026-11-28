@@ -145,11 +145,41 @@
 					</excludes>
 				</configuration>
 			</plugin>
+			<!-- Semana 6: separacion de pruebas unitarias e integracion -->
+			<plugin>
+			    <groupId>org.apache.maven.plugins</groupId>
+			    <artifactId>maven-surefire-plugin</artifactId>
+			    <configuration>
+			        <excludedGroups>integration</excludedGroups>
+			    </configuration>
+			</plugin>
+			<plugin>
+			    <groupId>org.apache.maven.plugins</groupId>
+			    <artifactId>maven-failsafe-plugin</artifactId>
+			    <configuration>
+			        <groups>integration</groups>
+			        <includes>
+			            <include>**/*Test.java</include>
+			            <include>**/*Tests.java</include>
+			            <include>**/*TestCase.java</include>
+			            <include>**/*IT.java</include>
+			        </includes>
+			    </configuration>
+			    <executions>
+			        <execution>
+			            <goals>
+			                <goal>integration-test</goal>
+			                <goal>verify</goal>
+			            </goals>
+			        </execution>
+			    </executions>
+			</plugin>
 			<!-- Semana 4: JaCoCo mide la cobertura al ejecutar las pruebas -->
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>0.8.12</version>
+			    <configuration><append>true</append></configuration>
 				<executions>
 					<execution>
 						<goals>
@@ -158,7 +188,7 @@
 					</execution>
 					<execution>
 						<id>report</id>
-						<phase>test</phase>
+						<phase>verify</phase>
 						<goals>
 							<goal>report</goal>
 						</goals>

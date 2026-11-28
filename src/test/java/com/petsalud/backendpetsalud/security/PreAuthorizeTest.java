@@ -42,6 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * para demostrar que es la anotacion del metodo la que bloquea al rol incorrecto
  * antes de llegar al servicio.
  */
+@org.junit.jupiter.api.Tag("integration")
 @WebMvcTest(controllers = {NotificacionController.class, RecompensaController.class, ExpedienteMedicoController.class})
 @Import({SecurityConfig.class, JwtRequestFilter.class, ActividadSospechosaService.class})
 class PreAuthorizeTest {

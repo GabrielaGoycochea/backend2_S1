@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * H2 en memoria con SQL real de Hibernate. Las cargas tipicas de inyeccion se tratan como un
  * valor mas (parametro enlazado), por lo que no devuelven datos ni alteran las tablas.
  */
+@org.junit.jupiter.api.Tag("integration")
 @DataJpaTest(properties = {
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
         "spring.datasource.username=sa",

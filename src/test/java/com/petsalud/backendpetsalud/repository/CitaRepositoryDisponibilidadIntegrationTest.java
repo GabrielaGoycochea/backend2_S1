@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Comprueba la semantica real de existsByVeterinarioIdAndFechaHoraAndEstadoNot: que cita bloquea
  * el horario de un veterinario y cual no.
  */
+@org.junit.jupiter.api.Tag("integration")
 @DataJpaTest(properties = "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect")
 class CitaRepositoryDisponibilidadIntegrationTest {
 

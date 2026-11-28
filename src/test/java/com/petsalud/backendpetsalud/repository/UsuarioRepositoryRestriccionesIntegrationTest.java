@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * Comprueba que el rol es obligatorio (@Column(nullable = false)) y que el email es unico
  * (@Column(unique = true)), aunque un dato invalido llegue a la capa de persistencia.
  */
+@org.junit.jupiter.api.Tag("integration")
 @DataJpaTest(properties = "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect")
 class UsuarioRepositoryRestriccionesIntegrationTest {
 

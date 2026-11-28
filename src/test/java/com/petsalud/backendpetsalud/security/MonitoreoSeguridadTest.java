@@ -32,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * registrado con IP, usuario y operacion, sin contrasenas ni tokens.
  */
 @ExtendWith(OutputCaptureExtension.class)
+@org.junit.jupiter.api.Tag("integration")
 @WebMvcTest(controllers = {AuthController.class, ProductoController.class})
 @Import({SecurityConfig.class, JwtRequestFilter.class, ActividadSospechosaService.class, JwtUtil.class, LoginAttemptService.class})
 @TestPropertySource(properties = {"jwt.secret=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", "jwt.expiration-ms=900000", "jwt.issuer=PetSalud"})

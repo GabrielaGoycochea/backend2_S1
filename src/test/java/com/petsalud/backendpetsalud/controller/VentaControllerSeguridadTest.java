@@ -32,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * VentaControllerTest usa standaloneSetup, que no pasa por Spring Security; por eso los permisos
  * se prueban aquí con @WebMvcTest y la configuración de seguridad real. Estructura AAA en cada prueba.
  */
+@org.junit.jupiter.api.Tag("integration")
 @WebMvcTest(VentaController.class)
 @Import({SecurityConfig.class, JwtRequestFilter.class, ActividadSospechosaService.class})
 @DisplayName("VentaController: permisos con seguridad real")
