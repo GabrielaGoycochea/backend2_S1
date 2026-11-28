@@ -1,5 +1,6 @@
 # Semana 5: integracion continua. En cada push o pull request se ejecutan las pruebas
 # y la regla de cobertura de JaCoCo; si una prueba falla o la cobertura baja de 80 %, el check queda en rojo.
+# Semana 6: primero las pruebas unitarias (rapidas, sin variables de entorno) y despues la verificacion completa.
 name: Pruebas PetSalud
 
 on:
@@ -22,15 +23,18 @@ jobs:
           java-version: "21"
           cache: maven
 
-      # Las pruebas que levantan el contexto (contextLoads, rollback) necesitan una clave JWT en Base64.
+      - name: Pruebas unitarias (rapidas, sin JWT_SECRET)
+        run: |
+          chmod +x mvnw
+          ./mvnw -B test
+
+      # Las pruebas de integracion (@Tag("integration")) que levantan el contexto necesitan una clave JWT en Base64.
       # Se genera una distinta en cada ejecucion: no es la de produccion y no queda guardada en el repositorio.
       - name: Generar JWT_SECRET temporal
         run: echo "JWT_SECRET=$(openssl rand -base64 48 | tr -d '\n')" >> "$GITHUB_ENV"
 
-      - name: Ejecutar pruebas y verificar cobertura (mvn verify)
-        run: |
-          chmod +x mvnw
-          ./mvnw -B clean verify
+      - name: Pruebas de integracion y cobertura (mvn verify)
+        run: ./mvnw -B verify
 
       - name: Publicar reporte de cobertura JaCoCo
         if: always()
@@ -43,5 +47,12 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: reportes-surefire
+          name: reportes-surefire-unitarias
           path: target/surefire-reports
+
+      - name: Publicar reportes de Failsafe (integracion)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reportes-failsafe
+          path: target/failsafe-reports

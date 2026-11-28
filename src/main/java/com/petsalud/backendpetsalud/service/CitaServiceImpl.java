@@ -10,6 +10,7 @@ import com.petsalud.backendpetsalud.repository.MascotaRepository;
 import com.petsalud.backendpetsalud.repository.UsuarioRepository;
 import com.petsalud.backendpetsalud.security.AutorizacionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -61,7 +62,7 @@ public class CitaServiceImpl implements CitaService {
                 .estado(EstadoCita.AGENDADA)
                 .build();
 
-        return citaRepository.save(cita);
+        return guardarSinChoqueDeHorario(cita);
     }
 
     @Override
@@ -114,7 +115,7 @@ public class CitaServiceImpl implements CitaService {
         }
 
         cita.setEstado(EstadoCita.desdeTexto(nuevoEstado));
-        return citaRepository.save(cita);
+        return guardarSinChoqueDeHorario(cita);
     }
 
     @Override
@@ -127,7 +128,9 @@ public class CitaServiceImpl implements CitaService {
         }
         autorizacionService.verificarPropietarioOAdmin(propietarioIdDe(cita.getMascota()));
 
-        citaRepository.deleteById(id);
+        // Semana 6: cancelar cambia el estado y conserva el registro (trazabilidad clinica)
+        cita.setEstado(EstadoCita.CANCELADA);
+        citaRepository.save(cita);
     }
 
     @Override
@@ -186,5 +189,16 @@ public class CitaServiceImpl implements CitaService {
             throw new IllegalArgumentException("La mascota no tiene un propietario registrado");
         }
         return propietario.getId();
+    }
+
+    // Semana 6: la restriccion unica de la base protege cuando dos solicitudes llegan a la vez
+    private Cita guardarSinChoqueDeHorario(Cita cita) {
+        try {
+            Cita guardada = citaRepository.save(cita);
+            citaRepository.flush();
+            return guardada;
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalArgumentException("El veterinario ya tiene una cita agendada en ese horario");
+        }
     }
 }

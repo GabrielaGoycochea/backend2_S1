@@ -31,7 +31,7 @@ API REST con Spring Boot 3, Spring Security con autenticación JWT (stateless), 
 
 **Historia del proyecto**
 
-10. [Historial de entregas por semana (2 a 5)](#10-historial-de-entregas-por-semana)
+10. [Historial de entregas por semana (2 a 6)](#10-historial-de-entregas-por-semana)
 
 ## 1. Requisitos
 
@@ -163,7 +163,16 @@ Si en el futuro se decide renombrar los roles, la migración controlada sería: 
 
 ### 6.1 Cómo ejecutarlas
 
-Las pruebas que levantan el contexto de Spring (`BackendpetsaludApplicationTests` y el rollback de ventas) usan H2 en memoria, por lo que **no necesitan MySQL**, pero sí la variable `JWT_SECRET` en **Base64**; con un texto cualquiera fallan al crear `JwtUtil`. Para generar una clave local en PowerShell:
+Desde la Semana 6 las pruebas están separadas en dos grupos:
+
+| Grupo | Qué contiene | Se ejecuta con | Requisitos |
+|---|---|---|---|
+| **Unitarias** | Mockito y validación de datos: sin Spring y sin base de datos | `.\mvnw.cmd test` | Ninguno |
+| **De integración** | Las etiquetadas con `@Tag("integration")`: JPA con H2, contexto de Spring y controladores con seguridad real | `.\mvnw.cmd verify` (las corre el plugin Failsafe, después de las unitarias) | `JWT_SECRET` en Base64; no necesitan MySQL |
+
+`verify` ejecuta ambos grupos, genera el informe de JaCoCo y comprueba el 80 %. Si una prueba unitaria falla, la causa es de lógica: no depende de ninguna variable de entorno.
+
+Para las pruebas de integración hay que definir `JWT_SECRET` en **Base64**; con un texto cualquiera fallan al crear `JwtUtil`. Para generar una clave local en PowerShell:
 
 ```powershell
 $env:JWT_SECRET = [Convert]::ToBase64String([byte[]](1..48 | ForEach-Object { Get-Random -Maximum 256 }))
@@ -171,14 +180,12 @@ $env:JWT_SECRET = [Convert]::ToBase64String([byte[]](1..48 | ForEach-Object { Ge
 
 | Qué ejecutar | Comando |
 |---|---|
-| Suite completa con comprobación de cobertura (recomendado) | `.\mvnw.cmd clean verify` |
-| Suite completa sin comprobación de cobertura | `.\mvnw.cmd test` |
-| Solo la Semana 3 (seguridad) | `.\mvnw.cmd test "-Dtest=PreAuthorizeTest,AmenazasComunesTest,InyeccionSqlRepositorioTest,MonitoreoSeguridadTest,ActividadSospechosaServiceTest"` |
-| Subconjunto de seguridad (autorización, JWT y bloqueo) | `.\mvnw.cmd test "-Dtest=*SecurityTest,AutorizacionServiceTest,Jwt*Test,SecurityConfigHttpTest,LoginAttemptServiceTest,AuthLockoutTest"` |
-| Solo la Semana 4 (ventas y usuarios, sin contexto de Spring) | `.\mvnw.cmd test "-Dtest=VentaServiceImplTest,UsuarioServiceImplTest,UsuarioTest,VentaControllerTest"` |
-| Solo la Semana 5 (unitarias con Mockito y validación de datos) | `.\mvnw.cmd test "-Dtest=CitaServiceImplTest,MascotaServiceImplTest,UsuarioServiceImplTest,UsuarioDatosValidosTest,MascotaRequestValidacionTest"` |
+| Solo las unitarias (rápido) | `.\mvnw.cmd test` |
+| Todo, con informe y comprobación de cobertura (recomendado) | `.\mvnw.cmd clean verify` |
+| Una clase unitaria | `.\mvnw.cmd test "-Dtest=CitaServiceImplTest"` |
+| Una clase de integración (sin comprobar cobertura) | `.\mvnw.cmd verify "-Dit.test=CitaCancelacionIntegrationTest" "-Djacoco.skip=true"` |
 
-El informe de cobertura queda en `target/site/jacoco/index.html`.
+El informe de cobertura queda en `target/site/jacoco/index.html` y se genera en `verify`, para incluir también las pruebas de integración.
 
 ### 6.2 Cobertura con JaCoCo
 
@@ -194,7 +201,7 @@ La regla no implica que todo el proyecto alcance ese porcentaje: solo controla l
 
 ### 6.3 Integración continua
 
-El flujo `.github/workflows/pruebas-backend.yml` (GitHub Actions) ejecuta `mvnw clean verify` en cada `push` y en cada pull request hacia `main` o hacia ramas que empiezan con `Semana` o `semana`. Genera un `JWT_SECRET` temporal en cada ejecución y publica como artefactos los reportes de JaCoCo y de Surefire. Si una prueba falla o la cobertura baja de 80 %, el check queda en rojo.
+El flujo `.github/workflows/pruebas-backend.yml` (GitHub Actions) se ejecuta en cada `push` y en cada pull request hacia `main` o hacia ramas que empiezan con `Semana` o `semana`. Tiene dos pasos de pruebas: primero las unitarias (`mvnw test`, sin ninguna variable de entorno) y después la verificación completa (`mvnw verify`), para la cual genera un `JWT_SECRET` temporal. Publica como artefactos los reportes de JaCoCo, de Surefire (unitarias) y de Failsafe (integración). Si una prueba falla o la cobertura baja de 80 %, el check queda en rojo.
 
 ### 6.4 Qué comprueba cada grupo de pruebas (por semana)
 
@@ -236,8 +243,18 @@ El documento consolida 19 pruebas unitarias de Venta, 11 de Usuario y 1 prueba d
 | Unitarias (Mockito, sin base de datos) | `CitaServiceImplTest`, `MascotaServiceImplTest`, `UsuarioServiceImplTest` | Estado inicial `Agendada`, horario ocupado, propietario registrado, rol `VETERINARIO`, permisos por rol y el registro público con rol `CLIENTE` |
 | Validación de datos (Bean Validation) | `UsuarioDatosValidosTest`, `MascotaRequestValidacionTest` | Email y nombre obligatorios y con formato válido; nombre y especie de la mascota válidos |
 | Integración (JPA y H2, sin mocks de repositorio) | `CitaRepositoryDisponibilidadIntegrationTest`, `CitaAgendamientoIntegrationTest`, `MascotaRepositoryRelacionIntegrationTest`, `UsuarioRepositoryRestriccionesIntegrationTest` | Consulta real de disponibilidad, rechazo de una segunda cita en el mismo horario, lista de mascotas de un `CLIENTE` y restricciones de la base (rol obligatorio y email único) |
-|Capa web (MockMvc con @WebMvcTest y standaloneSetup)| `UsuarioControllerTest`, `VentaControllerSeguridadTest`, `VentaControllerTest` | Verificación de respuestas HTTP y permisos de usuarios y ventas. Las pruebas con @WebMvcTest comprueban autorizaciones mediante Spring Security, mientras que standaloneSetup verifica respuestas del controlador con servicios simulados|
+| Capa web (`@WebMvcTest` con seguridad real) | `UsuarioControllerTest`, `VentaControllerSeguridadTest`, `VentaControllerTest` | Códigos HTTP (200, 204, 400, 401, 403 y 404) y permisos de los endpoints de usuarios y ventas |
 | Entidades | `RelacionesBidireccionalesTest` | `toString`, `equals` y `hashCode` sin recursión infinita en relaciones bidireccionales |
+
+**Semana 6: estados de la cita, restricción de horario y expedientes**
+
+| Tipo | Clases | Qué comprueban |
+|---|---|---|
+| Unitarias | `EstadoCitaTest`, `CitaServiceImplTest`, `ExpedienteMedicoServiceImplTest` | Estados cerrados (`AGENDADA`, `CANCELADA`, `COMPLETADA`) sin importar mayúsculas; cancelar cambia el estado y no borra; un choque de horario detectado por la base se traduce en un error claro; registro médico completo y firmado por un veterinario |
+| Integración (JPA y H2) | `CitaCancelacionIntegrationTest`, `CitaRestriccionHorarioIntegrationTest`, `MascotaConsistenciaIntegrationTest` | "Cancelo y reagendo en el mismo horario"; la base impide dos citas activas del mismo veterinario y horario; una cancelada libera el horario; las citas y registros de una mascota no se mezclan con los de otra |
+| Integración (controlador con seguridad real) | `ExpedienteMedicoControllerSeguridadTest` | Expedientes: 401 sin token, 403 para `CLIENTE`, 200 para `VETERINARIO`, y eliminar solo el `ADMIN` |
+
+El detalle del ciclo de TDD (qué prueba se escribió primero y qué implementación la hizo pasar) está en [docs/semana6/TDD_ciclos.md](docs/semana6/TDD_ciclos.md).
 
 ### 6.5 Evolución de la suite
 
@@ -247,6 +264,7 @@ El documento consolida 19 pruebas unitarias de Venta, 11 de Usuario y 1 prueba d
 | 3 | 97 | Sin fallos, errores ni omitidas; `BUILD SUCCESS` |
 | 4 | 133 (36 adicionales) | `verify` con `BUILD SUCCESS` y `All coverage checks have been met`; líneas cubiertas: `VentaServiceImpl` 98,0 % (49/50) y `UsuarioServiceImpl` 100,0 % (19/19); ramas: 96,4 % y 100,0 % |
 | 5 | 231 (98 adicionales) | 0 fallos, 0 errores y 0 omitidas; `verify` con `BUILD SUCCESS` y `All coverage checks have been met`. Líneas cubiertas: `CitaServiceImpl` 100 % (82/82), `MascotaServiceImpl` 100 % (33/33), `UsuarioServiceImpl` 100 % (19/19), `VentaServiceImpl` 98,0 % (49/50), `UsuarioController` 100 % (20/20) y `VentaController` 100 % (10/10). Ramas: 89 %, 75 %, 100 %, 96 % y sin ramas en los dos controladores |
+| 6 | [completar con el total de `mvnw clean verify`] | [completar: fallos, errores, `BUILD SUCCESS` y cobertura por clase] |
 
 ## 7. Pruebas manuales en Postman
 
@@ -410,9 +428,11 @@ WARN CUENTA_BLOQUEADA usuario=otro.cliente@petsalud.cl ip=127.0.0.1 minutos=5 mo
 ## 9. Limitaciones conocidas y mejoras planificadas
 
 - **CSRF desactivado:** la credencial viaja solo en el header `Authorization`, que el navegador no agrega por su cuenta, y la API no usa cookies ni sesión. Se complementa con CORS restringido a `cors.allowed-origins`. Si algún día el token se guarda en una cookie, hay que reactivar CSRF.
-- **Citas (estado y quién agenda):** el estado de una cita solo se valida como texto (letras, 3 a 20 caracteres), no contra una lista cerrada. El veterinario asignado se valida contra su rol (desde la Semana 5), pero el veterinario tampoco agenda citas: las agenda el cliente o el ADMIN.
-- **Citas (disponibilidad):** la disponibilidad compara la fecha y hora exactas; el modelo no registra la duración de una cita.
-- **Citas (cancelación):** `cancelarCita()` elimina el registro mediante `deleteById`; en cambio, una cita que cambia al estado `Cancelada` mediante `actualizarEstadoCita()` permanece registrada y no bloquea el horario. Por tanto, el endpoint DELETE no conserva el historial de esa cita.
+- **Citas (quién agenda):** el veterinario asignado se valida contra su rol, pero el veterinario no agenda citas: las agenda el cliente o el ADMIN.
+- **Citas (disponibilidad):** el horario se compara por fecha y hora exactas, y la base lo protege con una restricción única (veterinario y horario) para las citas activas; el modelo no registra la duración de una cita.
+- **Citas (cancelación):** desde la Semana 6, cancelar (el endpoint DELETE o el cambio de estado) deja la cita en `CANCELADA` y conserva el registro. Una cita cancelada puede reactivarse mientras su horario siga libre. Todavía no hay una regla que impida cancelar una cita ya `COMPLETADA`.
+- **Datos anteriores a la Semana 6:** el estado ahora se guarda como `AGENDADA`, `CANCELADA` o `COMPLETADA`. Antes de usar una base de datos existente hay que normalizar el texto antiguo con `UPDATE citas SET estado = UPPER(estado);`. Las citas anteriores no tienen la clave de horario (`horario_activo`): solo las protege la verificación del servicio.
+- **Expedientes:** un expediente exige descripción, diagnóstico y tratamiento. Eliminar una mascota elimina en cascada sus citas y expedientes (`CascadeType.ALL`), lo que también afecta la trazabilidad clínica; queda como mejora pendiente.
 - **JWT sin revocación ni refresh:** un token es válido hasta que expira (15 minutos); no hay lista de tokens revocados ni token de refresco.
 - **Bloqueo en memoria:** el contador de intentos fallidos no se comparte entre varias instancias ni sobrevive a un reinicio. La combinación de correo + IP reduce el riesgo de bloqueo provocado desde otra IP, pero un atacante puede distribuir intentos entre distintas IP. Detrás de un proxy, debe configurarse correctamente la identificación de la IP del cliente.
 - **Monitoreo en memoria:** el conteo de solicitudes por IP también vive en memoria. En producción, el archivo `logs/petsalud.log` debería enviarse a un sistema de monitoreo (IDS/IPS o SIEM).
@@ -421,7 +441,9 @@ WARN CUENTA_BLOQUEADA usuario=otro.cliente@petsalud.cl ip=127.0.0.1 minutos=5 mo
 
 ### Mejoras planificadas
 
-Para la evaluación sumativa, como sugirió el profesor: control de concurrencia con `@Version` en `Producto` y una prueba de integración con dos ventas simultáneas del último producto. El mismo riesgo existe al agendar dos citas al mismo veterinario a la misma hora; ahí se resolvería con un índice único (veterinario, fecha y hora).
+- **Ventas:** control de concurrencia con `@Version` en `Producto` y una prueba de integración con dos ventas simultáneas del último producto. Para las citas, el mismo riesgo ya está resuelto desde la Semana 6 con la restricción única del horario.
+- **Citas:** regla que impida cancelar una cita `COMPLETADA`, y duración de la cita para detectar traslapes.
+- **Mascotas:** borrado lógico, para no perder citas ni expedientes al eliminar una mascota.
 
 ## 10. Historial de entregas por semana
 
@@ -477,3 +499,17 @@ Herramientas: JUnit 5, Mockito (ambas incluidas en `spring-boot-starter-test`, v
 | PUT de un usuario inexistente respondía 400 | Responde 404, igual que GET. `RecursoNoEncontradoException` extiende `IllegalArgumentException` y el manejador global la traduce a 404 | `RecursoNoEncontradoException`, `GlobalExceptionHandler`, `UsuarioServiceImpl` |
 | `StackOverflowError` en `toString` y `hashCode` de usuarios con mascotas (Lombok `@Data` en relaciones bidireccionales) | Listas inversas fuera de `toString`, `equals` y `hashCode`; la contraseña tampoco aparece en `toString` | `Usuario`, `Mascota`, `RelacionesBidireccionalesTest` |
 | Integración continua | GitHub Actions ejecuta `mvnw verify` en cada push y pull request y publica los reportes | `.github/workflows/pruebas-backend.yml` |
+
+### Semana 6 (rama `semana6-tdd`): TDD, estados de la cita y retroalimentación de la Semana 5
+
+Se aplicó TDD (primero la prueba que falla, después la implementación mínima) en cuatro ciclos, como respuesta a la retroalimentación de la Semana 5.
+
+| Cambio | Qué se agregó | Dónde |
+|---|---|---|
+| Estados cerrados | `EstadoCita` (`AGENDADA`, `CANCELADA`, `COMPLETADA`) reemplaza al texto libre; la API acepta cualquier combinación de mayúsculas y rechaza estados inexistentes | `EstadoCita`, `Cita`, `CitaServiceImpl` |
+| Cancelación por estado | Cancelar deja la cita en `CANCELADA` y conserva el registro; el horario queda libre | `CitaServiceImpl.cancelarCita` |
+| Restricción de horario | Clave única en la base (veterinario y horario) para citas activas; el servicio traduce el choque en un error 400 | `Cita.horarioActivo`, `CitaServiceImpl` |
+| Expediente médico | Exige descripción, diagnóstico y tratamiento, y que quien lo firma sea veterinario | `ExpedienteMedicoServiceImpl` |
+| Unitarias separadas de integración | `@Tag("integration")` más Surefire (`mvn test`) y Failsafe (`mvn verify`) | `pom.xml`, `pruebas-backend.yml` |
+
+Cambios de comportamiento: la API devuelve el estado como `AGENDADA`, `CANCELADA` o `COMPLETADA`, y `DELETE /api/citas/{id}` ya no borra la cita. Ver la nota de datos anteriores en la sección 9.
