@@ -157,4 +157,14 @@ class MascotaServiceImplTest {
         assertEquals(2, resultado.size());
         verify(autorizacionService).verificarPersonalOPropietario(3L);
     }
+
+    @Test
+    @DisplayName("Una mascota con propietario sin ID genera un error controlado")
+    void obtenerMascotaPorId_propietarioSinId_lanzaError() {
+        mascota.setPropietario(new Usuario());
+        when(mascotaRepository.findById(1L)).thenReturn(Optional.of(mascota));
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class, () -> mascotaService.obtenerMascotaPorId(1L));
+        assertTrue(error.getMessage().contains("propietario"));
+        verifyNoInteractions(autorizacionService);
+    }
 }

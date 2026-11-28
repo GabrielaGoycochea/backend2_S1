@@ -1,6 +1,10 @@
 package com.petsalud.backendpetsalud.repository;
 
 import com.petsalud.backendpetsalud.entity.Mascota;
+import com.petsalud.backendpetsalud.entity.Cita;
+import com.petsalud.backendpetsalud.entity.EstadoCita;
+import com.petsalud.backendpetsalud.entity.ExpedienteMedico;
+import java.time.LocalDateTime;
 import com.petsalud.backendpetsalud.entity.Rol;
 import com.petsalud.backendpetsalud.entity.Usuario;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,5 +89,31 @@ class MascotaRepositoryRelacionIntegrationTest {
                 .especie(especie)
                 .propietario(propietario)
                 .build();
+    }
+
+    @Test
+    @DisplayName("La mascota conserva sus relaciones con propietario, citas y expedientes medicos")
+    void mascota_conservaRelacionesClinicas() {
+        Mascota mascota = mascotaRepository.findByPropietarioId(clienteId).get(0);
+        Long mascotaId = mascota.getId();
+        Usuario veterinario = em.persist(Usuario.builder().nombre("Luis").email("vet@prueba.cl").password("hash").rol(Rol.VETERINARIO).build());
+        Long veterinarioId = veterinario.getId();
+        Cita cita = em.persist(Cita.builder().mascota(mascota).veterinario(veterinario).fechaHora(LocalDateTime.of(2030,1,15,10,0)).estado(EstadoCita.AGENDADA).motivo("Control").build());
+        ExpedienteMedico expediente = em.persist(ExpedienteMedico.builder().mascota(mascota).veterinario(veterinario).fecha(LocalDateTime.now()).descripcion("Control").diagnostico("Salud estable").tratamiento("Seguimiento").build());
+        em.flush();
+        em.clear();
+        Mascota recuperada = em.find(Mascota.class, mascotaId);
+        assertEquals(clienteId, recuperada.getPropietario().getId());
+        assertEquals(1, recuperada.getCitas().size());
+        assertEquals(1, recuperada.getExpedientesMedicos().size());
+        Cita citaRecuperada = recuperada.getCitas().get(0);
+        ExpedienteMedico expedienteRecuperado = recuperada.getExpedientesMedicos().get(0);
+        assertEquals(cita.getId(), citaRecuperada.getId());
+        assertEquals(expediente.getId(), expedienteRecuperado.getId());
+        assertEquals(mascotaId, citaRecuperada.getMascota().getId());
+        assertEquals(mascotaId, expedienteRecuperado.getMascota().getId());
+        assertEquals(veterinarioId, citaRecuperada.getVeterinario().getId());
+        assertEquals(veterinarioId, expedienteRecuperado.getVeterinario().getId());
+        assertEquals("Salud estable", expedienteRecuperado.getDiagnostico());
     }
 }
