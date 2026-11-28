@@ -31,7 +31,7 @@ API REST con Spring Boot 3, Spring Security con autenticación JWT (stateless), 
 
 **Historia del proyecto**
 
-10. [Historial de entregas por semana (2 a 5)](#10-historial-de-entregas-por-semana)
+10. [Historial de entregas por semana (2 a 6)](#10-historial-de-entregas-por-semana)
 
 ## 1. Requisitos
 
@@ -239,6 +239,17 @@ El documento consolida 19 pruebas unitarias de Venta, 11 de Usuario y 1 prueba d
 |Capa web (MockMvc con @WebMvcTest y standaloneSetup)| `UsuarioControllerTest`, `VentaControllerSeguridadTest`, `VentaControllerTest` | Verificación de respuestas HTTP y permisos de usuarios y ventas. Las pruebas con @WebMvcTest comprueban autorizaciones mediante Spring Security, mientras que standaloneSetup verifica respuestas del controlador con servicios simulados|
 | Entidades | `RelacionesBidireccionalesTest` | `toString`, `equals` y `hashCode` sin recursión infinita en relaciones bidireccionales |
 
+
+**Semana 6: pruebas funcionales, integracion y seguridad**
+
+| Clase o grupo | Validacion |
+|---|---|
+| `EstadoCitaTest` | Estados permitidos, conversion JPA, contrato JSON y rechazo de valores invalidos |
+| `CitaAgendamientoIntegrationTest` | Disponibilidad, cancelacion con historial, reagendamiento, concurrencia y reactivacion |
+| `ExpedienteMedicoServiceImplSecurityTest` | Datos clinicos, relaciones, consultas, eliminacion, identidad y rol del veterinario |
+| `MascotaServiceImplTest` y `MascotaRepositoryRelacionIntegrationTest` | Propietario registrado y persistencia de relaciones con citas y expedientes |
+| `CitaControllerTest`, `MascotaControllerTest` y `ExpedienteMedicoControllerTest` | Respuestas HTTP, validacion de datos y restricciones de acceso con Spring Security |
+
 ### 6.5 Evolución de la suite
 
 | Semana | Pruebas automáticas | Resultado |
@@ -247,6 +258,7 @@ El documento consolida 19 pruebas unitarias de Venta, 11 de Usuario y 1 prueba d
 | 3 | 97 | Sin fallos, errores ni omitidas; `BUILD SUCCESS` |
 | 4 | 133 (36 adicionales) | `verify` con `BUILD SUCCESS` y `All coverage checks have been met`; líneas cubiertas: `VentaServiceImpl` 98,0 % (49/50) y `UsuarioServiceImpl` 100,0 % (19/19); ramas: 96,4 % y 100,0 % |
 | 5 | 231 (98 adicionales) | 0 fallos, 0 errores y 0 omitidas; `verify` con `BUILD SUCCESS` y `All coverage checks have been met`. Líneas cubiertas: `CitaServiceImpl` 100 % (82/82), `MascotaServiceImpl` 100 % (33/33), `UsuarioServiceImpl` 100 % (19/19), `VentaServiceImpl` 98,0 % (49/50), `UsuarioController` 100 % (20/20) y `VentaController` 100 % (10/10). Ramas: 89 %, 75 %, 100 %, 96 % y sin ramas en los dos controladores |
+| 6 | 274 (43 adicionales) | 170 unitarias y 104 de integracion; 0 fallos, 0 errores y 0 omitidas; BUILD SUCCESS y umbrales JaCoCo cumplidos. |
 
 ## 7. Pruebas manuales en Postman
 
@@ -410,9 +422,9 @@ WARN CUENTA_BLOQUEADA usuario=otro.cliente@petsalud.cl ip=127.0.0.1 minutos=5 mo
 ## 9. Limitaciones conocidas y mejoras planificadas
 
 - **CSRF desactivado:** la credencial viaja solo en el header `Authorization`, que el navegador no agrega por su cuenta, y la API no usa cookies ni sesión. Se complementa con CORS restringido a `cors.allowed-origins`. Si algún día el token se guarda en una cookie, hay que reactivar CSRF.
-- **Citas (estado y quién agenda):** el estado de una cita solo se valida como texto (letras, 3 a 20 caracteres), no contra una lista cerrada. El veterinario asignado se valida contra su rol (desde la Semana 5), pero el veterinario tampoco agenda citas: las agenda el cliente o el ADMIN.
+- **Citas (estado y permisos):** `EstadoCita` restringe los valores a Agendada, Cancelada y Completada, conservando su representacion en JSON y mediante el conversor JPA. Las citas son agendadas por el CLIENTE propietario o el ADMIN.
 - **Citas (disponibilidad):** la disponibilidad compara la fecha y hora exactas; el modelo no registra la duración de una cita.
-- **Citas (cancelación):** `cancelarCita()` elimina el registro mediante `deleteById`; en cambio, una cita que cambia al estado `Cancelada` mediante `actualizarEstadoCita()` permanece registrada y no bloquea el horario. Por tanto, el endpoint DELETE no conserva el historial de esa cita.
+- **Citas (cancelacion):** desde la Semana 6, `cancelarCita()` conserva el registro con estado Cancelada y libera el horario. La reactivacion se rechaza si el horario esta ocupado.
 - **JWT sin revocación ni refresh:** un token es válido hasta que expira (15 minutos); no hay lista de tokens revocados ni token de refresco.
 - **Bloqueo en memoria:** el contador de intentos fallidos no se comparte entre varias instancias ni sobrevive a un reinicio. La combinación de correo + IP reduce el riesgo de bloqueo provocado desde otra IP, pero un atacante puede distribuir intentos entre distintas IP. Detrás de un proxy, debe configurarse correctamente la identificación de la IP del cliente.
 - **Monitoreo en memoria:** el conteo de solicitudes por IP también vive en memoria. En producción, el archivo `logs/petsalud.log` debería enviarse a un sistema de monitoreo (IDS/IPS o SIEM).
@@ -421,7 +433,7 @@ WARN CUENTA_BLOQUEADA usuario=otro.cliente@petsalud.cl ip=127.0.0.1 minutos=5 mo
 
 ### Mejoras planificadas
 
-Para la evaluación sumativa, como sugirió el profesor: control de concurrencia con `@Version` en `Producto` y una prueba de integración con dos ventas simultáneas del último producto. El mismo riesgo existe al agendar dos citas al mismo veterinario a la misma hora; ahí se resolvería con un índice único (veterinario, fecha y hora).
+Como mejora futura, evaluar `@Version` en `Producto` y probar dos ventas simultaneas del ultimo producto. La concurrencia de citas ya se aborda mediante bloqueo pesimista y transacciones; se valido sobre H2 y queda pendiente su comprobacion en MySQL real.
 
 ## 10. Historial de entregas por semana
 
@@ -477,3 +489,34 @@ Herramientas: JUnit 5, Mockito (ambas incluidas en `spring-boot-starter-test`, v
 | PUT de un usuario inexistente respondía 400 | Responde 404, igual que GET. `RecursoNoEncontradoException` extiende `IllegalArgumentException` y el manejador global la traduce a 404 | `RecursoNoEncontradoException`, `GlobalExceptionHandler`, `UsuarioServiceImpl` |
 | `StackOverflowError` en `toString` y `hashCode` de usuarios con mascotas (Lombok `@Data` en relaciones bidireccionales) | Listas inversas fuera de `toString`, `equals` y `hashCode`; la contraseña tampoco aparece en `toString` | `Usuario`, `Mascota`, `RelacionesBidireccionalesTest` |
 | Integración continua | GitHub Actions ejecuta `mvnw verify` en cada push y pull request y publica los reportes | `.github/workflows/pruebas-backend.yml` |
+
+### Semana 6: pruebas unitarias e integracion
+
+Aportes de la rama `Semana6_Monica_PruebasUnitarias`:
+
+- Separacion de pruebas unitarias mediante Surefire y de integracion mediante Failsafe, utilizando `@Tag("integration")`.
+- Aplicacion de TDD: fase RED y GREEN para corregir la eliminacion del historial al cancelar citas.
+- Implementacion de `EstadoCita` con compatibilidad de representacion JPA y JSON.
+- Bloqueo pesimista y transacciones para prevenir reservas simultaneas y reactivaciones en horarios ocupados.
+- Validacion del rol VETERINARIO al registrar expedientes medicos.
+- Ampliacion de pruebas funcionales, relaciones JPA y seguridad HTTP de citas, mascotas y expedientes.
+
+#### Resultados verificados el 28 de noviembre de 2026
+
+| Clase | Instrucciones | Lineas | Ramas |
+|---|---:|---:|---:|
+| CitaServiceImpl | 97.75 % | 98.94 % | 85.14 % |
+| ExpedienteMedicoServiceImpl | 100 % | 100 % | 100 % |
+| MascotaServiceImpl | 100 % | 100 % | 100 % |
+| VentaServiceImpl | 95.50 % | 98.00 % | 96.43 % |
+| UsuarioServiceImpl | 100 % | 100 % | 100 % |
+| CitaController | 100 % | 100 % | N/A |
+| ExpedienteMedicoController | 100 % | 100 % | N/A |
+| MascotaController | 100 % | 100 % | N/A |
+| VentaController | 100 % | 100 % | N/A |
+| UsuarioController | 100 % | 100 % | N/A |
+| AuthController | 92.52 % | 93.55 % | 66.67 % |
+
+Resultado local: **274 pruebas aprobadas**, sin fallos, errores ni omisiones. Cobertura general: 81.32 % de lineas (640 de 787).
+
+Las pruebas de integracion utilizan H2; las pruebas HTTP utilizan MockMvc y servicios simulados. La validacion de concurrencia en MySQL real queda pendiente.
