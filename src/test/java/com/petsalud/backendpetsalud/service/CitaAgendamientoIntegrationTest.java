@@ -1,6 +1,8 @@
 package com.petsalud.backendpetsalud.service;
 
+import org.junit.jupiter.api.Tag;
 import com.petsalud.backendpetsalud.entity.Cita;
+import com.petsalud.backendpetsalud.entity.EstadoCita;
 import com.petsalud.backendpetsalud.entity.Mascota;
 import com.petsalud.backendpetsalud.entity.Rol;
 import com.petsalud.backendpetsalud.entity.Usuario;
@@ -26,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Solo se simula AutorizacionService, porque depende del usuario autenticado y tiene sus propias pruebas.
  * Une la regla de horario ocupado de CitaServiceImpl con la consulta real de CitaRepository.
  */
+@Tag("integration")
 @DataJpaTest(properties = "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect")
 @Import(CitaServiceImpl.class)
 class CitaAgendamientoIntegrationTest {
@@ -78,12 +81,12 @@ class CitaAgendamientoIntegrationTest {
     @DisplayName("Si la cita del horario esta Cancelada, el horario puede volver a agendarse")
     void horarioConCitaCancelada_puedeVolverAAgendarse() {
         Cita primera = citaService.agendarCita(mascotaId, veterinarioId, fecha, "Control");
-        primera.setEstado("Cancelada");
+        primera.setEstado(EstadoCita.CANCELADA);
         em.flush();
 
         Cita nueva = citaService.agendarCita(mascotaId, veterinarioId, fecha, "Vacuna");
 
-        assertEquals("Agendada", nueva.getEstado());
+        assertEquals(EstadoCita.AGENDADA, nueva.getEstado());
         assertEquals(2, citaRepository.count());
     }
 }

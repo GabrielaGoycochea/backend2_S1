@@ -1,6 +1,7 @@
 package com.petsalud.backendpetsalud.service;
 
 import com.petsalud.backendpetsalud.entity.Cita;
+import com.petsalud.backendpetsalud.entity.EstadoCita;
 import com.petsalud.backendpetsalud.entity.Mascota;
 import com.petsalud.backendpetsalud.entity.Usuario;
 import com.petsalud.backendpetsalud.repository.CitaRepository;
@@ -73,7 +74,7 @@ class CitaServiceImplSecurityTest {
                 1L, 5L, fecha, "Control veterinario");
 
         assertNotNull(resultado);
-        assertEquals("Agendada", resultado.getEstado());
+        assertEquals(EstadoCita.AGENDADA, resultado.getEstado());
         assertEquals(mascota, resultado.getMascota());
 
         verify(autorizacionService)

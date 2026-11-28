@@ -1,6 +1,7 @@
 package com.petsalud.backendpetsalud.service;
 
 import com.petsalud.backendpetsalud.entity.Cita;
+import com.petsalud.backendpetsalud.entity.EstadoCita;
 import com.petsalud.backendpetsalud.entity.Mascota;
 import com.petsalud.backendpetsalud.entity.Rol;
 import com.petsalud.backendpetsalud.entity.Usuario;
@@ -17,6 +18,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDateTime;
@@ -61,12 +63,12 @@ class CitaServiceImplTest {
     private void simularAgendamientoValido() {
         when(mascotaRepository.findById(1L)).thenReturn(Optional.of(mascota));
         when(usuarioRepository.findById(5L)).thenReturn(Optional.of(veterinario));
-        when(citaRepository.existsByVeterinarioIdAndFechaHoraAndEstadoNot(5L, fecha, "Cancelada")).thenReturn(false);
+        when(citaRepository.existsByVeterinarioIdAndFechaHoraAndEstadoNot(5L, fecha, EstadoCita.CANCELADA)).thenReturn(false);
         when(citaRepository.save(any(Cita.class))).thenAnswer(i -> i.getArgument(0));
     }
 
     private Cita cita(Long id, Usuario vet) {
-        return Cita.builder().id(id).mascota(mascota).veterinario(vet).fechaHora(fecha).estado("Agendada").build();
+        return Cita.builder().id(id).mascota(mascota).veterinario(vet).fechaHora(fecha).estado(EstadoCita.AGENDADA).build();
     }
 
     // ---------- Creacion de citas ----------
@@ -78,7 +80,7 @@ class CitaServiceImplTest {
 
         Cita resultado = citaService.agendarCita(1L, 5L, fecha, "Control anual");
 
-        assertEquals("Agendada", resultado.getEstado());
+        assertEquals(EstadoCita.AGENDADA, resultado.getEstado());
         assertEquals("Control anual", resultado.getMotivo());
         assertEquals(fecha, resultado.getFechaHora());
         verify(citaRepository).save(any(Cita.class));
@@ -91,7 +93,7 @@ class CitaServiceImplTest {
 
         citaService.agendarCita(1L, 5L, fecha, "Control anual");
 
-        verify(citaRepository).existsByVeterinarioIdAndFechaHoraAndEstadoNot(5L, fecha, "Cancelada");
+        verify(citaRepository).existsByVeterinarioIdAndFechaHoraAndEstadoNot(5L, fecha, EstadoCita.CANCELADA);
     }
 
     @Test
@@ -99,12 +101,49 @@ class CitaServiceImplTest {
     void agendarCita_horarioOcupado_lanzaError() {
         when(mascotaRepository.findById(1L)).thenReturn(Optional.of(mascota));
         when(usuarioRepository.findById(5L)).thenReturn(Optional.of(veterinario));
-        when(citaRepository.existsByVeterinarioIdAndFechaHoraAndEstadoNot(5L, fecha, "Cancelada")).thenReturn(true);
+        when(citaRepository.existsByVeterinarioIdAndFechaHoraAndEstadoNot(5L, fecha, EstadoCita.CANCELADA)).thenReturn(true);
 
         IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
                 () -> citaService.agendarCita(1L, 5L, fecha, "Control anual"));
 
         assertTrue(error.getMessage().contains("horario"));
+        verify(citaRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Si dos solicitudes llegan a la vez, la restriccion de la base rechaza la segunda")
+    void agendarCita_choqueDeHorarioEnLaBase_lanzaError() {
+        when(mascotaRepository.findById(1L)).thenReturn(Optional.of(mascota));
+        when(usuarioRepository.findById(5L)).thenReturn(Optional.of(veterinario));
+        when(citaRepository.save(any(Cita.class))).thenThrow(new DataIntegrityViolationException("horario_activo"));
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> citaService.agendarCita(1L, 5L, fecha, "Control anual"));
+
+        assertTrue(error.getMessage().contains("horario"));
+    }
+
+    @Test
+    @DisplayName("Una mascota cuyo propietario no tiene identificador no puede tener citas")
+    void agendarCita_propietarioSinId_lanzaError() {
+        propietario.setId(null);
+        when(mascotaRepository.findById(1L)).thenReturn(Optional.of(mascota));
+
+        assertThrows(IllegalArgumentException.class, () -> citaService.agendarCita(1L, 5L, fecha, "Control"));
+
+        verifyNoInteractions(autorizacionService);
+        verify(citaRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("No se puede agendar una cita para la mascota de otro cliente")
+    void agendarCita_mascotaDeOtroCliente_lanzaAccesoDenegado() {
+        when(mascotaRepository.findById(1L)).thenReturn(Optional.of(mascota));
+        doThrow(new AccessDeniedException("Acceso denegado"))
+                .when(autorizacionService).verificarPropietarioOAdmin(3L);
+
+        assertThrows(AccessDeniedException.class, () -> citaService.agendarCita(1L, 5L, fecha, "Control"));
+
         verify(citaRepository, never()).save(any());
     }
 
@@ -240,7 +279,7 @@ class CitaServiceImplTest {
 
         Cita resultado = citaService.actualizarEstadoCita(1L, "Completada");
 
-        assertEquals("Completada", resultado.getEstado());
+        assertEquals(EstadoCita.COMPLETADA, resultado.getEstado());
         verify(citaRepository).save(any(Cita.class));
     }
 
@@ -251,7 +290,7 @@ class CitaServiceImplTest {
         when(autorizacionService.obtenerUsuarioAutenticado()).thenReturn(veterinario);
         when(citaRepository.save(any(Cita.class))).thenAnswer(i -> i.getArgument(0));
 
-        assertEquals("Cancelada", citaService.actualizarEstadoCita(1L, "Cancelada").getEstado());
+        assertEquals(EstadoCita.CANCELADA, citaService.actualizarEstadoCita(1L, "Cancelada").getEstado());
     }
 
     @Test
@@ -263,7 +302,7 @@ class CitaServiceImplTest {
 
         assertThrows(AccessDeniedException.class, () -> citaService.actualizarEstadoCita(1L, "Completada"));
 
-        assertEquals("Agendada", existente.getEstado());
+        assertEquals(EstadoCita.AGENDADA, existente.getEstado());
         verify(citaRepository, never()).save(any());
     }
 
@@ -275,17 +314,56 @@ class CitaServiceImplTest {
         assertThrows(IllegalArgumentException.class, () -> citaService.actualizarEstadoCita(9L, "Completada"));
     }
 
+    @Test
+    @DisplayName("El estado se acepta sin importar mayusculas o minusculas")
+    void actualizarEstadoCita_ignoraMayusculas() {
+        when(citaRepository.findById(1L)).thenReturn(Optional.of(cita(1L, veterinario)));
+        when(autorizacionService.obtenerUsuarioAutenticado()).thenReturn(admin);
+        when(citaRepository.save(any(Cita.class))).thenAnswer(i -> i.getArgument(0));
+
+        assertEquals(EstadoCita.COMPLETADA, citaService.actualizarEstadoCita(1L, "completada").getEstado());
+    }
+
+    @Test
+    @DisplayName("Un estado que no existe se rechaza y la cita conserva el suyo")
+    void actualizarEstadoCita_estadoInvalido_lanzaError() {
+        Cita existente = cita(1L, veterinario);
+        when(citaRepository.findById(1L)).thenReturn(Optional.of(existente));
+        when(autorizacionService.obtenerUsuarioAutenticado()).thenReturn(admin);
+
+        assertThrows(IllegalArgumentException.class, () -> citaService.actualizarEstadoCita(1L, "Pendiente"));
+
+        assertEquals(EstadoCita.AGENDADA, existente.getEstado());
+        verify(citaRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Reactivar una cita cancelada en un horario que ya se ocupo se rechaza")
+    void actualizarEstadoCita_reactivarEnHorarioOcupado_lanzaError() {
+        when(citaRepository.findById(1L)).thenReturn(Optional.of(cita(1L, veterinario)));
+        when(autorizacionService.obtenerUsuarioAutenticado()).thenReturn(admin);
+        when(citaRepository.save(any(Cita.class))).thenThrow(new DataIntegrityViolationException("horario_activo"));
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> citaService.actualizarEstadoCita(1L, "Agendada"));
+
+        assertTrue(error.getMessage().contains("horario"));
+    }
+
     // ---------- Cancelacion ----------
 
     @Test
-    @DisplayName("El propietario puede cancelar la cita y esta se elimina")
-    void cancelarCita_propietario_eliminaLaCita() {
-        when(citaRepository.findById(1L)).thenReturn(Optional.of(cita(1L, veterinario)));
+    @DisplayName("Cancelar una cita cambia su estado a CANCELADA y conserva el registro")
+    void cancelarCita_propietario_cambiaElEstadoYConservaElRegistro() {
+        Cita existente = cita(1L, veterinario);
+        when(citaRepository.findById(1L)).thenReturn(Optional.of(existente));
 
         citaService.cancelarCita(1L);
 
         verify(autorizacionService).verificarPropietarioOAdmin(3L);
-        verify(citaRepository).deleteById(1L);
+        assertEquals(EstadoCita.CANCELADA, existente.getEstado());
+        verify(citaRepository).save(existente);
+        verify(citaRepository, never()).deleteById(any());
     }
 
     @Test
@@ -297,18 +375,18 @@ class CitaServiceImplTest {
         assertThrows(IllegalArgumentException.class, () -> citaService.cancelarCita(1L));
 
         verifyNoInteractions(autorizacionService);
-        verify(citaRepository, never()).deleteById(any());
+        verify(citaRepository, never()).save(any());
     }
 
     @Test
     @DisplayName("Cancelar una cita sin mascota asociada lanza un error claro")
     void cancelarCita_citaSinMascota_lanzaError() {
-        Cita sinMascota = Cita.builder().id(1L).veterinario(veterinario).fechaHora(fecha).estado("Agendada").build();
+        Cita sinMascota = Cita.builder().id(1L).veterinario(veterinario).fechaHora(fecha).estado(EstadoCita.AGENDADA).build();
         when(citaRepository.findById(1L)).thenReturn(Optional.of(sinMascota));
 
         assertThrows(IllegalArgumentException.class, () -> citaService.cancelarCita(1L));
 
-        verify(citaRepository, never()).deleteById(any());
+        verify(citaRepository, never()).save(any());
     }
 
     @Test
@@ -318,7 +396,7 @@ class CitaServiceImplTest {
 
         assertThrows(IllegalArgumentException.class, () -> citaService.cancelarCita(9L));
 
-        verify(citaRepository, never()).deleteById(any());
+        verify(citaRepository, never()).save(any());
     }
 
     // ---------- Listados ----------

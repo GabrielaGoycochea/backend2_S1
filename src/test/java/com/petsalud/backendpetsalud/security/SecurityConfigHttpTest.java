@@ -1,5 +1,6 @@
 package com.petsalud.backendpetsalud.security;
 
+import org.junit.jupiter.api.Tag;
 import com.petsalud.backendpetsalud.controller.ProductoController;
 import com.petsalud.backendpetsalud.service.ProductoService;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Tag("integration")
 @WebMvcTest(ProductoController.class)
 @Import({SecurityConfig.class, JwtRequestFilter.class, ActividadSospechosaService.class})
 class SecurityConfigHttpTest {

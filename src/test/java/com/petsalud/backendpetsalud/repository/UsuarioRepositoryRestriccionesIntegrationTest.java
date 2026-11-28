@@ -1,5 +1,6 @@
 package com.petsalud.backendpetsalud.repository;
 
+import org.junit.jupiter.api.Tag;
 import com.petsalud.backendpetsalud.entity.Rol;
 import com.petsalud.backendpetsalud.entity.Usuario;
 import jakarta.persistence.PersistenceException;
@@ -16,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * Comprueba que el rol es obligatorio (@Column(nullable = false)) y que el email es unico
  * (@Column(unique = true)), aunque un dato invalido llegue a la capa de persistencia.
  */
+@Tag("integration")
 @DataJpaTest(properties = "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect")
 class UsuarioRepositoryRestriccionesIntegrationTest {
 

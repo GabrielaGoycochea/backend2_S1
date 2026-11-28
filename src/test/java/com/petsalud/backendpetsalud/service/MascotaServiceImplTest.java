@@ -14,6 +14,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.security.access.AccessDeniedException;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -156,5 +158,26 @@ class MascotaServiceImplTest {
 
         assertEquals(2, resultado.size());
         verify(autorizacionService).verificarPersonalOPropietario(3L);
+    }
+
+    @Test
+    @DisplayName("Una mascota cuyo propietario no tiene identificador lanza un error claro")
+    void obtenerMascotaPorId_propietarioSinId_lanzaError() {
+        cliente.setId(null);
+        when(mascotaRepository.findById(1L)).thenReturn(Optional.of(mascota));
+
+        assertThrows(IllegalArgumentException.class, () -> mascotaService.obtenerMascotaPorId(1L));
+
+        verifyNoInteractions(autorizacionService);
+    }
+
+    @Test
+    @DisplayName("Un cliente no puede consultar la mascota de otro cliente")
+    void obtenerMascotaPorId_mascotaDeOtroCliente_lanzaAccesoDenegado() {
+        when(mascotaRepository.findById(1L)).thenReturn(Optional.of(mascota));
+        doThrow(new AccessDeniedException("Acceso denegado"))
+                .when(autorizacionService).verificarPersonalOPropietario(3L);
+
+        assertThrows(AccessDeniedException.class, () -> mascotaService.obtenerMascotaPorId(1L));
     }
 }

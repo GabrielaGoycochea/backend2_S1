@@ -1,5 +1,6 @@
 package com.petsalud.backendpetsalud.security;
 
+import org.junit.jupiter.api.Tag;
 import com.petsalud.backendpetsalud.controller.AuthController;
 import com.petsalud.backendpetsalud.controller.CitaController;
 import com.petsalud.backendpetsalud.controller.ExpedienteMedicoController;
@@ -50,6 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Cada caso comprueba que el ataque se rechaza ANTES de llegar al servicio.
  */
 @ExtendWith(OutputCaptureExtension.class)
+@Tag("integration")
 @WebMvcTest(controllers = {AuthController.class, UsuarioController.class, MascotaController.class,
         ExpedienteMedicoController.class, CitaController.class, ProductoController.class})
 @Import({SecurityConfig.class, JwtRequestFilter.class, ActividadSospechosaService.class, JwtUtil.class, LoginAttemptService.class})

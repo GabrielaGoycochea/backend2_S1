@@ -1,5 +1,6 @@
 package com.petsalud.backendpetsalud.repository;
 
+import org.junit.jupiter.api.Tag;
 import com.petsalud.backendpetsalud.entity.Producto;
 import com.petsalud.backendpetsalud.entity.Rol;
 import com.petsalud.backendpetsalud.entity.Usuario;
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * H2 en memoria con SQL real de Hibernate. Las cargas tipicas de inyeccion se tratan como un
  * valor mas (parametro enlazado), por lo que no devuelven datos ni alteran las tablas.
  */
+@Tag("integration")
 @DataJpaTest(properties = {
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
         "spring.datasource.username=sa",

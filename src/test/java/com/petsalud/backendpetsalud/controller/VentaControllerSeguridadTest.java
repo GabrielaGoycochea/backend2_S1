@@ -1,5 +1,6 @@
 package com.petsalud.backendpetsalud.controller;
 
+import org.junit.jupiter.api.Tag;
 import com.petsalud.backendpetsalud.security.ActividadSospechosaService;
 import com.petsalud.backendpetsalud.security.JwtRequestFilter;
 import com.petsalud.backendpetsalud.security.JwtUtil;
@@ -32,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * VentaControllerTest usa standaloneSetup, que no pasa por Spring Security; por eso los permisos
  * se prueban aquí con @WebMvcTest y la configuración de seguridad real. Estructura AAA en cada prueba.
  */
+@Tag("integration")
 @WebMvcTest(VentaController.class)
 @Import({SecurityConfig.class, JwtRequestFilter.class, ActividadSospechosaService.class})
 @DisplayName("VentaController: permisos con seguridad real")

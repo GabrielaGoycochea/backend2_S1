@@ -1,6 +1,6 @@
 # Semana 5: integracion continua. En cada push o pull request se ejecutan las pruebas
 # y la regla de cobertura de JaCoCo; si una prueba falla o la cobertura baja de 80 %, el check queda en rojo.
-name: Pruebas PetSalud 
+name: Pruebas PetSalud
 
 on:
   push:

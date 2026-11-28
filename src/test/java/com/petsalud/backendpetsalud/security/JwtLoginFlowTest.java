@@ -1,5 +1,6 @@
 package com.petsalud.backendpetsalud.security;
 
+import org.junit.jupiter.api.Tag;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.petsalud.backendpetsalud.controller.AuthController;
 import com.petsalud.backendpetsalud.controller.ProductoController;
@@ -20,6 +21,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Tag("integration")
 @WebMvcTest(controllers = {AuthController.class, ProductoController.class})
 @Import({SecurityConfig.class, JwtRequestFilter.class, ActividadSospechosaService.class, JwtUtil.class, LoginAttemptService.class})
 @TestPropertySource(properties = {"jwt.secret=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=", "jwt.expiration-ms=900000", "jwt.issuer=PetSalud"})

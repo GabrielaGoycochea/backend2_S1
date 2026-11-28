@@ -1,5 +1,6 @@
 package com.petsalud.backendpetsalud.security;
 
+import org.junit.jupiter.api.Tag;
 import com.petsalud.backendpetsalud.controller.ExpedienteMedicoController;
 import com.petsalud.backendpetsalud.controller.NotificacionController;
 import com.petsalud.backendpetsalud.controller.RecompensaController;
@@ -42,6 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * para demostrar que es la anotacion del metodo la que bloquea al rol incorrecto
  * antes de llegar al servicio.
  */
+@Tag("integration")
 @WebMvcTest(controllers = {NotificacionController.class, RecompensaController.class, ExpedienteMedicoController.class})
 @Import({SecurityConfig.class, JwtRequestFilter.class, ActividadSospechosaService.class})
 class PreAuthorizeTest {

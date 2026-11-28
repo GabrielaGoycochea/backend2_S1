@@ -145,6 +145,26 @@
 					</excludes>
 				</configuration>
 			</plugin>
+			<!-- Semana 6: pruebas unitarias e de integracion por separado.
+			     mvn test   -> solo unitarias (rapidas, sin JWT_SECRET ni contexto de Spring)
+			     mvn verify -> unitarias + integracion (@Tag("integration")) + cobertura -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<excludedGroups>integration</excludedGroups>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<configuration>
+					<groups>integration</groups>
+					<includes>
+						<include>**/*Test.java</include>
+					</includes>
+				</configuration>
+			</plugin>
 			<!-- Semana 4: JaCoCo mide la cobertura al ejecutar las pruebas -->
 			<plugin>
 				<groupId>org.jacoco</groupId>
@@ -158,7 +178,8 @@
 					</execution>
 					<execution>
 						<id>report</id>
-						<phase>test</phase>
+						<!-- Semana 6: el informe se genera en verify para incluir tambien las pruebas de integracion -->
+						<phase>verify</phase>
 						<goals>
 							<goal>report</goal>
 						</goals>

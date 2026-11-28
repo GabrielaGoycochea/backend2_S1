@@ -1,6 +1,7 @@
 package com.petsalud.backendpetsalud.service;
 
 import com.petsalud.backendpetsalud.entity.Cita;
+import com.petsalud.backendpetsalud.entity.EstadoCita;
 import com.petsalud.backendpetsalud.entity.Mascota;
 import com.petsalud.backendpetsalud.entity.Rol;
 import com.petsalud.backendpetsalud.entity.Usuario;
@@ -18,9 +19,6 @@ import java.util.Optional;
 
 @Service
 public class CitaServiceImpl implements CitaService {
-
-    private static final String AGENDADA = "Agendada";
-    private static final String CANCELADA = "Cancelada";
 
     @Autowired
     private CitaRepository citaRepository;
@@ -51,7 +49,7 @@ public class CitaServiceImpl implements CitaService {
         }
 
         // S5 No se puede agendar en un horario ya ocupado por el veterinario
-        if (citaRepository.existsByVeterinarioIdAndFechaHoraAndEstadoNot(veterinarioId, fechaHora, CANCELADA)) {
+        if (citaRepository.existsByVeterinarioIdAndFechaHoraAndEstadoNot(veterinarioId, fechaHora, EstadoCita.CANCELADA)) {
             throw new IllegalArgumentException("El veterinario ya tiene una cita agendada en ese horario");
         }
 
@@ -60,7 +58,7 @@ public class CitaServiceImpl implements CitaService {
                 .veterinario(veterinario)
                 .fechaHora(fechaHora)
                 .motivo(motivo)
-                .estado(AGENDADA)
+                .estado(EstadoCita.AGENDADA)
                 .build();
 
         return citaRepository.save(cita);
@@ -115,7 +113,7 @@ public class CitaServiceImpl implements CitaService {
             throw new AccessDeniedException("No tiene permiso para modificar esta cita");
         }
 
-        cita.setEstado(nuevoEstado);
+        cita.setEstado(EstadoCita.desdeTexto(nuevoEstado));
         return citaRepository.save(cita);
     }
 

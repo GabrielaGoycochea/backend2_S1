@@ -2,6 +2,7 @@ package com.petsalud.backendpetsalud.service;
 
 import com.petsalud.backendpetsalud.entity.ExpedienteMedico;
 import com.petsalud.backendpetsalud.entity.Mascota;
+import com.petsalud.backendpetsalud.entity.Rol;
 import com.petsalud.backendpetsalud.entity.Usuario;
 import com.petsalud.backendpetsalud.repository.ExpedienteMedicoRepository;
 import com.petsalud.backendpetsalud.repository.MascotaRepository;
@@ -55,15 +56,22 @@ class ExpedienteMedicoServiceImplSecurityTest {
         mascota.setId(1L);
         Usuario veterinario = new Usuario();
         veterinario.setId(2L);
+        veterinario.setRol(Rol.VETERINARIO); // Semana 6: quien firma el registro debe ser veterinario
 
         when(mascotaRepository.findById(1L)).thenReturn(Optional.of(mascota));
         when(usuarioRepository.findById(2L)).thenReturn(Optional.of(veterinario));
         when(expedienteMedicoRepository.save(any(ExpedienteMedico.class)))
                 .thenAnswer(invocacion -> invocacion.getArgument(0));
 
-        ExpedienteMedico resultado = expedienteService.agregarRegistro(1L, 2L, new ExpedienteMedico());
+        ExpedienteMedico resultado = expedienteService.agregarRegistro(1L, 2L, registroCompleto());
 
         assertSame(veterinario, resultado.getVeterinario());
         verify(autorizacionService).verificarIdentidadVeterinario(2L);
+    }
+
+    // Semana 6: un registro valido trae descripcion, diagnostico y tratamiento
+    private ExpedienteMedico registroCompleto() {
+        return ExpedienteMedico.builder()
+                .descripcion("Control anual").diagnostico("Sano").tratamiento("Vacuna anual").build();
     }
 }
